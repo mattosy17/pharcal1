@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Gastos Cósmicos</title>
+    
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#8B5CF6" />
+
+    <!-- CDNs (Consolidated) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/3.6.0/locale/pt-BR.min.js" integrity="sha512-rZ8VOUgoR7U3X3z09kqX0vaJ8cMhJ7j3REKHx34kF3oAgCR2vVdSwyXFpXg4DCH91iHptQ3e51Z4BStx2kU/wA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Fonts (Consolidated) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌠</text></svg>">
+
+    <style>
+        /* --- STYLES FOR PATRIMONIO BUBBLE --- */
+        #page-patrimonio .patrimonio-info-bubble-wrapper {
+            position: fixed; top: 85px; right: 20px; z-index: 950; pointer-events: none; display: none; 
+        }
+        #page-patrimonio .patrimonio-info-bubble-container {
+            position: relative; background: linear-gradient(145deg, rgba(52, 211, 153, 0.25), rgba(10, 177, 128, 0.2));
+            border: 1px solid rgba(74, 222, 128, 0.4); color: #E0E0E0; border-radius: 50px;
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.3), inset 0 0 10px rgba(52, 211, 153, 0.1);
+            white-space: nowrap; display: flex; flex-direction: column; align-items: stretch; cursor: pointer;
+            overflow: hidden; min-height: calc(1.1em + 1.4rem); max-height: calc(1.1em + 1.4rem);
+            transition: max-height 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), border-radius 0.4s ease-in-out, box-shadow 0.4s ease, background 0.4s ease;
+            pointer-events: auto; width: fit-content; padding: 0;
+        }
+        #page-patrimonio .patrimonio-info-bubble-container:hover {
+            max-height: 500px; border-radius: 20px; background: linear-gradient(145deg, rgba(52, 211, 153, 0.4), rgba(10, 177, 128, 0.35));
+            box-shadow: 0 10px 35px rgba(52, 211, 153, 0.5), inset 0 0 15px rgba(74, 222, 128, 0.15);
+        }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-main-content {
+            display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0.7rem 1.5rem; flex-shrink: 0; line-height: 1.1em;
+        }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-main-content span:first-child { font-weight: 500; font-size: 0.9em; color: #A7F3D0; }
+        #page-patrimonio #patrimonioBubbleUltimoValor { font-family: 'Orbitron', sans-serif; font-size: 1.2em; font-weight: 700; color: #fff; text-shadow: 0 0 8px rgba(74, 222, 128, 0.7); }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-details-content {
+            width: 100%; padding: 1rem 1.5rem 0.8rem 1.5rem; margin-top: 0.6rem; border-top: 1px solid rgba(74, 222, 128, 0.3);
+            opacity: 0; transform: translateY(-8px) scaleY(0.98); transform-origin: top center;
+            transition: opacity 0.4s ease-out 0.1s, transform 0.4s ease-out 0.1s; pointer-events: none;
+        }
+        #page-patrimonio .patrimonio-info-bubble-container:hover .bubble-details-content { opacity: 1; transform: translateY(0) scaleY(1); pointer-events: auto; }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-details-content p { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.7rem; font-size: 0.85em; }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-details-content p:last-child { margin-bottom: 0; }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-details-content span:first-child { color: #D1D5DB; margin-right: 10px; flex-shrink: 0; }
+        #page-patrimonio .patrimonio-info-bubble-container .bubble-details-content span:last-child { font-weight: 600; text-align: right; word-break: break-all; }
+        #page-patrimonio #patrimonioBubbleMaiorValor { color: var(--cosmos-positive); }
+        #page-patrimonio #patrimonioBubbleDiferencaPico { color: var(--cosmos-warning); }
+        #page-patrimonio #patrimonioBubbleFlutuacaoRecente.positivo { color: var(--cosmos-positive); }
+        #page-patrimonio #patrimonioBubbleFlutuacaoRecente.negativo { color: var(--cosmos-negative); }
+        #page-patrimonio #patrimonioBubbleFlutuacaoRecente.neutro { color: var(--cosmos-text-secondary); }
+
+        /* --- GLOBAL RESET & BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        /* --- GLOBAL CSS VARIABLES (Merged from all files - ensure consistency) --- */
+        :root {
+            --font-body: 'Inter', sans-serif;
+            --font-title: 'Orbitron', sans-serif;
+            --cosmos-bg: #0D1117;
+            --cosmos-text-primary: #E0E0E0;
+            --cosmos-text-secondary: #A0AEC0;
+            --cosmos-card-bg: rgba(29, 29, 40, 0.88);
+            --cosmos-border: rgba(124, 58, 237, 0.40);
+            --cosmos-border-hover: rgba(167, 139, 250, 0.7);
+            --cosmos-shadow-strong: rgba(0, 0, 0, 0.55);
+            --cosmos-shadow-soft-glow: rgba(167, 139, 250, 0.12);
+            --cosmos-purple-primary: #A78BFA;
+            --cosmos-purple-secondary: #C4B5FD;
+            --cosmos-purple-dark: #8B5CF6;
+            --cosmos-blue-accent: #60A5FA;
+            --cosmos-pink-accent: #EC4899;
+            --cosmos-cyan-accent: #6AF2F0;
+            --cosmos-cyan-glow: rgba(106, 242, 240, 0.35);
+            --cosmos-positive: #34D399;
+            --cosmos-negative: #F87171;
+            --cosmos-warning: #FBBF24;
+            --cosmos-input-bg: rgba(13, 17, 23, 0.92);
+            --cosmos-input-border: rgba(124, 58, 237, 0.45);
+            --cosmos-input-focus-border: var(--cosmos-purple-primary);
+            --cosmos-input-focus-shadow: rgba(167, 139, 250, 0.45);
+            --cosmos-button-primary-bg-start: var(--cosmos-purple-dark);
+            --cosmos-button-primary-bg-end: var(--cosmos-blue-accent);
+            --cosmos-button-primary-hover-bg-start: var(--cosmos-purple-primary);
+            --cosmos-button-primary-hover-bg-end: var(--cosmos-cyan-accent);
+            --index-button-primary-gradient-start: #8B5CF6;
+            --index-button-primary-gradient-end: #6366F1;
+            --index-button-primary-hover-gradient-start: #7C3AED;
+            --index-button-primary-hover-gradient-end: #4F46E5;
+            --cosmos-button-delete-border: var(--cosmos-pink-accent);
+            --cosmos-button-delete-text: var(--cosmos-pink-accent);
+            --cosmos-button-delete-hover-bg: rgba(236, 72, 153, 0.18);
+            --cosmos-button-delete-hover-text: #fda4af;
+            --cosmos-button-edit-bg: #F59E0B;
+            --cosmos-button-save-bg: var(--cosmos-positive);
+            --cosmos-button-cancel-bg: #6B7280;
+        }
+
+        body {
+            font-family: var(--font-body); line-height: 1.6; background-color: var(--cosmos-bg);
+            color: var(--cosmos-text-primary); display: flex; flex-direction: column;
+            min-height: 100vh; overflow-x: hidden; position: relative; padding-top: 70px; 
+        }
+        
+        #starry-sky-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+            background-image:
+                radial-gradient(ellipse at center, rgba(30, 27, 75, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse at top left, rgba(80, 30, 70, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse at bottom right, rgba(20, 50, 90, 0.1) 0%, transparent 60%),
+                radial-gradient(circle at 10% 20%, rgba(210, 210, 255, 0.6) 0.5px, transparent 1px),
+                radial-gradient(circle at 30% 50%, rgba(190, 210, 255, 0.5) 0.5px, transparent 1px),
+                radial-gradient(circle at 70% 30%, rgba(220, 200, 255, 0.7) 0.5px, transparent 1px),
+                radial-gradient(circle at 90% 60%, rgba(200, 200, 255, 0.4) 0.5px, transparent 1px),
+                radial-gradient(circle at 50% 80%, rgba(220, 200, 255, 0.6) 0.5px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 70px 70px, 60px 60px, 80px 80px, 90px 90px;
+            opacity: 0;
+            animation: subtleStarShine 35s infinite alternate ease-in-out, fadeInBg 3s 0.5s ease-out forwards;
+            pointer-events: none; will-change: opacity, transform;
+        }
+        @keyframes subtleStarShine { 0% { opacity: 0.6; transform: scale(1.005) rotate(0.05deg); } 100% { opacity: 0.9; transform: scale(1) rotate(-0.05deg); } }
+        @keyframes fadeInBg { to { opacity: 0.85; } }
+
+        #main-nav {
+            position: fixed; top: 0; left: 0; width: 100%; background-color: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(10px) saturate(150%); padding: 0.75rem 1.5rem;
+            display: flex; justify-content: center; align-items: center; gap: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); z-index: 1000;
+            border-bottom: 1px solid var(--cosmos-border);
+        }
+        #main-nav a { text-decoration: none; } /* Added for multi-page navigation */
+        #main-nav button {
+            font-family: var(--font-title); font-size: 0.9em; font-weight: 500;
+            color: var(--cosmos-text-secondary); background-color: transparent; border: 1px solid transparent;
+            padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer;
+            transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        #main-nav button:hover {
+            color: var(--cosmos-text-primary); background-color: rgba(167, 139, 250, 0.1);
+            border-color: var(--cosmos-purple-primary); transform: translateY(-2px);
+        }
+        #main-nav button.active {
+            color: var(--cosmos-cyan-accent); background-color: rgba(106, 242, 240, 0.15);
+            border-color: var(--cosmos-cyan-accent); box-shadow: 0 0 10px var(--cosmos-cyan-glow); font-weight: 700;
+        }
+        
+        .loading-spinner-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 17, 23, 0.7); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center; z-index: 2000;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+        }
+        .loading-spinner-overlay.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .spinner {
+            width: 60px; height: 60px; border: 5px solid rgba(106, 242, 240, 0.2);
+            border-top-color: var(--cosmos-cyan-accent); border-radius: 50%;
+            animation: spin 1s linear infinite, pulseSpinnerGlow 2s infinite alternate;
+            box-shadow: 0 0 15px var(--cosmos-cyan-glow);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulseSpinnerGlow { from { box-shadow: 0 0 10px rgba(106, 242, 240, 0.3); } to { box-shadow: 0 0 25px rgba(106, 242, 240, 0.6); } }
+
+        #notification-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+            display: flex; flex-direction: column-reverse; gap: 10px;
+        }
+        .notification-popup {
+            font-family: var(--font-body); background-color: var(--cosmos-card-bg);
+            color: var(--cosmos-text-primary); padding: 12px 18px; border-radius: 0.5rem;
+            border-left: 5px solid var(--cosmos-blue-accent);
+            box-shadow: 0 5px 20px var(--cosmos-shadow-strong), 0 0 12px var(--cosmos-shadow-soft-glow);
+            opacity: 0; transform: translateX(120%);
+            transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-width: 280px; max-width: 380px; font-size: 0.9em; line-height: 1.45;
+            display: flex; align-items: center; cursor: pointer;
+        }
+        .notification-popup.show { opacity: 1; transform: translateX(0); }
+        .notification-popup.success { border-left-color: var(--cosmos-positive); }
+        .notification-popup.error { border-left-color: var(--cosmos-negative); }
+        .notification-popup.warning { border-left-color: var(--cosmos-warning); }
+        .notification-popup.info { border-left-color: var(--cosmos-blue-accent); }
+        .notification-popup .icon { margin-right: 12px; font-size: 1.3em; line-height: 1; }
+        .notification-popup.success .icon { color: var(--cosmos-positive); }
+        .notification-popup.error .icon { color: var(--cosmos-negative); }
+        .notification-popup.warning .icon { color: var(--cosmos-warning); }
+        .notification-popup.info .icon { color: var(--cosmos-blue-accent); }
+
+        main { padding: 2rem; } /* Simplified main padding */
+        
+        .container { max-width: 1200px; margin: 0 auto; width: 100%; } 
+        #page-emprestimos .container { max-width: 1300px; } 
+
+        /* --- STYLES FROM patrimonio.html (Scoped to #page-patrimonio) --- */
+        #page-patrimonio header { text-align: center; margin-bottom: 2.5rem; animation: fadeInHeaderPatrimonio 1s ease-out; }
+        @keyframes fadeInHeaderPatrimonio { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        #page-patrimonio header h1 {
+            font-family: var(--font-title); color: var(--cosmos-text-primary); font-weight: 700; font-size: 2.5em;
+            text-shadow: 0 0 12px var(--cosmos-cyan-glow), 0 0 8px var(--cosmos-purple-primary), 0 0 20px var(--cosmos-purple-dark);
+            background: linear-gradient(135deg, var(--cosmos-cyan-accent), var(--cosmos-purple-secondary), var(--cosmos-purple-dark), var(--cosmos-pink-accent));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-fill-color: transparent;
+            background-size: 300% auto; animation: textGradientShinePatrimonio 6s linear infinite alternate, cosmicPulsePatrimonio 4s infinite ease-in-out;
+        }
+        @keyframes textGradientShinePatrimonio { to { background-position: 300% center; } }
+        @keyframes cosmicPulsePatrimonio { 0%, 100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.2); transform: scale(1.02); } }
+        #page-patrimonio .secao {
+            background-color: var(--cosmos-card-bg); backdrop-filter: blur(12px) saturate(130%); border: 1px solid var(--cosmos-border);
+            padding: 1.8rem 2rem; border-radius: 0.85rem;
+            box-shadow: 0 8px 30px var(--cosmos-shadow-strong), inset 0 0 10px rgba(13,17,23,0.5), 0 0 10px var(--cosmos-shadow-soft-glow); 
+            margin-bottom: 2.2rem; animation: popInSmoothPatrimonio 0.7s cubic-bezier(0.25, 0.8, 0.25, 1) backwards; 
+        }
+        #page-patrimonio .secao:nth-child(1) { animation-delay: 0.15s; }
+        #page-patrimonio .secao:nth-child(2) { animation-delay: 0.25s; }
+        /* ... Other patrimonio styles ... */
+
+        /* --- STYLES FROM index.html (Scoped to #page-emprestimos) --- */
+        #page-emprestimos .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        #page-emprestimos .total-counter-wrapper { position: fixed; top: 85px; right: 20px; z-index: 950; pointer-events: none; display: none; }
+        /* ... Other emprestimos styles ... */
+        
+        /* --- STYLES FROM terer.html (Scoped to #page-gastos) --- */
+        #page-gastos header { text-align: center; margin-bottom: 2.5rem; animation: fadeInHeaderGastos 1s ease-out; }
+        @keyframes fadeInHeaderGastos { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        #page-gastos header h1 {
+            font-family: var(--font-title); color: var(--cosmos-text-primary); font-weight: 700; font-size: 2.5em;
+            text-shadow: 0 0 12px var(--cosmos-cyan-glow), 0 0 8px var(--cosmos-purple-primary), 0 0 20px var(--cosmos-purple-dark);
+            background: linear-gradient(135deg, var(--cosmos-cyan-accent), var(--cosmos-purple-secondary), var(--cosmos-purple-dark), var(--cosmos-pink-accent));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-fill-color: transparent;
+            background-size: 300% auto; animation: textGradientShineGastos 6s linear infinite alternate, cosmicPulseGastos 4s infinite ease-in-out;
+        }
+        @keyframes textGradientShineGastos { to { background-position: 300% center; } }
+        @keyframes cosmicPulseGastos { 0%, 100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.2); transform: scale(1.02); } }
+        #page-gastos .container { max-width: 1300px; margin: 0 auto; width: 100%; }
+        #page-gastos .date-selector-control {
+            background-color: var(--cosmos-card-bg); backdrop-filter: blur(10px) saturate(120%);
+            border: 1px solid var(--cosmos-border); padding: 1.2rem 1.5rem; border-radius: 0.75rem;
+            box-shadow: 0 6px 25px var(--cosmos-shadow-strong), 0 0 8px var(--cosmos-shadow-soft-glow);
+            margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center; justify-content: center;
+            animation: popInSmoothGastos 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+        }
+        @keyframes popInSmoothGastos { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        #page-gastos .date-selector-control label { font-family: var(--font-title); color: var(--cosmos-purple-secondary); font-size: 1.1em; }
+        #page-gastos .date-selector-control input[type="month"] {
+            padding: 0.8rem 1.2rem; background-color: var(--cosmos-input-bg); color: var(--cosmos-text-primary);
+            border: 1px solid var(--cosmos-input-border); border-radius: 0.375rem; font-family: var(--font-body); font-size: 1.1em;
+            min-width: 200px; color-scheme: dark; transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        #page-gastos .date-selector-control input[type="month"]:focus {
+            outline: none; border-color: var(--cosmos-input-focus-border);
+            box-shadow: 0 0 0 3px var(--cosmos-input-focus-shadow), 0 0 10px var(--cosmos-cyan-glow);
+        }
+        #page-gastos #gastosMesDetalhesContainer .secao { /* Adjusted ID */
+            opacity: 0; transform: translateY(30px) scale(0.98); 
+            animation: fadeInDetailSectionGastos 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; 
+            background-color: var(--cosmos-card-bg);
+            backdrop-filter: blur(12px) saturate(130%); 
+            border: 1px solid var(--cosmos-border);
+            padding: 1.8rem 2rem; border-radius: 0.85rem;
+            box-shadow: 0 8px 30px var(--cosmos-shadow-strong), inset 0 0 10px rgba(13,17,23,0.5), 0 0 10px var(--cosmos-shadow-soft-glow); 
+            margin-bottom: 2.2rem;
+        }
+        @keyframes fadeInDetailSectionGastos { to { opacity: 1; transform: translateY(0) scale(1); } }
+        #page-gastos .secao h2 {
+            font-family: var(--font-title); color: var(--cosmos-text-primary); margin-bottom: 1.5rem; text-align: left; font-weight: 500; font-size: 1.8em;
+            position: relative; padding-bottom: 0.6rem; border-bottom: 2px solid transparent;
+        }
+        #page-gastos .secao h2.sub-titulo-graficos {
+            font-size: 1.5em; color: var(--cosmos-purple-secondary); margin-top: 2.5rem; margin-bottom: 1rem;
+            text-align: center;
+        }
+        #page-gastos .secao h2.sub-titulo-graficos::after { display: none; }
+        #page-gastos .secao h2::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 0%; height: 2px;
+            background: linear-gradient(90deg, var(--cosmos-cyan-accent), var(--cosmos-pink-accent), var(--cosmos-purple-primary));
+            border-radius: 2px; transition: width 0.5s ease-in-out 0.1s; box-shadow: 0 0 8px var(--cosmos-cyan-accent);
+        }
+        #page-gastos #gastosMesDetalhesContainer .secao:hover h2:not(.sub-titulo-graficos)::after, /* Adjusted ID */
+        #page-gastos .secao.visible h2:not(.sub-titulo-graficos)::after { width: 60%; }
+        #page-gastos .cards-container { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: space-around; margin-bottom: 2rem; }
+        #page-gastos .card {
+            background: linear-gradient(145deg, rgba(35,40,60,0.92), rgba(25,30,45,0.97)); border: 1px solid var(--cosmos-border);
+            padding: 1.2rem 1.5rem; border-radius: 0.6rem; flex: 1 1 280px; min-width: 250px;
+            box-shadow: 0 4px 18px var(--cosmos-shadow-strong), 0 0 8px var(--cosmos-shadow-soft-glow), inset 0 1px 2px rgba(13,17,23,0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; position: relative; overflow: hidden;
+        }
+        #page-gastos .card::before {
+            content: ""; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(106, 242, 240, 0.08), transparent);
+            transition: left 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        #page-gastos .card:hover::before { left: 100%; }
+        #page-gastos .card:hover {
+            transform: translateY(-6px) scale(1.025); border-color: var(--cosmos-cyan-accent);
+            box-shadow: 0 10px 30px var(--cosmos-shadow-strong), 0 0 20px var(--cosmos-cyan-glow), inset 0 1px 3px rgba(13,17,23,0.5);
+        }
+        #page-gastos .card h3 { font-family: var(--font-title); font-size: 1.0em; color: var(--cosmos-purple-secondary); font-weight: 500; margin-bottom: 0.5rem; }
+        #page-gastos .card p { margin: 0.3rem 0; font-size: 1.4em; font-weight: 700; color: var(--cosmos-text-primary); }
+        #page-gastos .card .subtext { font-size: 0.8em; font-weight: 400; color: var(--cosmos-text-secondary); opacity: 0.9; }
+        #page-gastos .card .positivo { color: var(--cosmos-positive) !important; text-shadow: 0 0 6px var(--cosmos-positive); animation: pulsePositiveGastos 2s infinite alternate; }
+        #page-gastos .card .negativo { color: var(--cosmos-negative) !important; text-shadow: 0 0 6px var(--cosmos-negative); animation: pulseNegativeGastos 2s infinite alternate; }
+        @keyframes pulsePositiveGastos { from { opacity: 0.8; filter: brightness(0.9); } to { opacity: 1; filter: brightness(1.1); } }
+        @keyframes pulseNegativeGastos { from { opacity: 0.8; filter: brightness(0.9); } to { opacity: 1; filter: brightness(1.1); } }
+        #page-gastos .graficos-container { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-around; margin-top: 1.5rem; margin-bottom: 2rem; }
+        #page-gastos .grafico-card {
+            background-color: var(--cosmos-card-bg); backdrop-filter: blur(8px); border: 1px solid var(--cosmos-border);
+            padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 6px 20px var(--cosmos-shadow-strong), inset 0 0 5px rgba(13,17,23,0.3);
+            flex: 1 1 400px; min-width: 300px; max-width: 550px; display: flex; flex-direction: column; align-items: center;
+        }
+        #page-gastos .grafico-card h4 { font-family: var(--font-title); color: var(--cosmos-cyan-accent); font-size: 1.2em; margin-bottom: 1rem; text-align: center; }
+        #page-gastos .grafico-card canvas { max-width: 100%; max-height: 300px; }
+        #page-gastos .grafico-placeholder { color: var(--cosmos-text-secondary); font-style: italic; text-align: center; padding: 2rem 0; }
+        #page-gastos .table-wrapper { overflow-x: auto; }
+        #page-gastos table {
+            width: 100%; border-collapse: separate; border-spacing: 0; background-color: rgba(15, 18, 30, 0.85);
+            border-radius: 0.75rem; overflow: hidden; box-shadow: 0 5px 20px var(--cosmos-shadow-strong);
+            border: 1px solid var(--cosmos-border); margin-top: 1rem;
+        }
+        #page-gastos th {
+            background-color: rgba(20, 25, 45, 0.9); color: var(--cosmos-cyan-accent); font-weight: 600; padding: 0.9rem 1.1rem;
+            font-family: var(--font-title); border-bottom: 2px solid var(--cosmos-cyan-accent); white-space: nowrap;
+            font-size: 0.9em; text-align: left; text-shadow: 0 0 4px var(--cosmos-cyan-accent);
+        }
+        #page-gastos td {
+            padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--cosmos-input-border); vertical-align: middle;
+            font-size: 0.85em; color: var(--cosmos-text-secondary); transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        #page-gastos tbody tr:last-child td { border-bottom: none; }
+        #page-gastos tbody tr:nth-child(even) { background-color: rgba(20, 25, 45, 0.5); }
+        #page-gastos tbody tr:hover { background-color: rgba(106, 242, 240, 0.07); }
+        #page-gastos tbody tr:hover td { color: var(--cosmos-cyan-accent); }
+        #page-gastos td.currency { text-align: right; }
+        #page-gastos td.center-text { text-align: center; font-weight: bold; }
+        #page-gastos td.positivo, #page-gastos tfoot td.positivo { color: var(--cosmos-positive) !important; font-weight: 600; text-shadow: 0 0 4px var(--cosmos-positive); }
+        #page-gastos td.negativo, #page-gastos tfoot td.negativo { color: var(--cosmos-negative) !important; font-weight: 600; text-shadow: 0 0 4px var(--cosmos-negative); }
+        #page-gastos tfoot td {
+            font-weight: bold; color: var(--cosmos-text-primary); background-color: rgba(25, 30, 50, 0.9);
+            padding: 1rem 1.1rem; font-size: 0.9em;
+        }
+        #page-gastos tfoot td:first-child { text-align: right; font-family: var(--font-title); color: var(--cosmos-purple-secondary); }
+        #page-gastos .form-transacao { margin-top: 1.5rem; padding: 1.5rem; background-color: rgba(20,25,40,0.8); border-radius: 0.75rem; border: 1px solid var(--cosmos-border); box-shadow: 0 0 15px var(--cosmos-shadow-soft-glow); animation: popInSmoothGastosForm 0.5s 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) backwards; }
+        @keyframes popInSmoothGastosForm { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        #page-gastos .form-transacao h3 { font-family: var(--font-title); color: var(--cosmos-purple-secondary); font-weight: 500; font-size: 1.3em; margin-bottom: 1.2rem; }
+        #page-gastos .form-transacao .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.2rem; }
+        #page-gastos .form-transacao .form-grid-full { grid-column: 1 / -1; }
+        #page-gastos .form-transacao label { display: block; margin-bottom: 0.3rem; font-size: 0.9em; color: var(--cosmos-text-secondary); }
+        #page-gastos .form-transacao input, #page-gastos .form-transacao select { width: 100%; padding: 0.7rem 0.9rem; border: 1px solid var(--cosmos-input-border); border-radius: 0.375rem; background-color: var(--cosmos-input-bg); color: var(--cosmos-text-primary); font-family: var(--font-body); font-size: 0.95em; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        #page-gastos .form-transacao input::placeholder { color: var(--cosmos-text-secondary); opacity: 0.7; }
+        #page-gastos .form-transacao input:focus, #page-gastos .form-transacao select:focus { outline: none; border-color: var(--cosmos-input-focus-border); box-shadow: 0 0 0 3px var(--cosmos-input-focus-shadow), 0 0 8px var(--cosmos-cyan-glow); }
+        #page-gastos .form-transacao .botoes-form { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; }
+        #page-gastos .form-transacao button { border: none; padding: 0.7rem 1.5rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-size: 1em; font-family: var(--font-title); transition: all 0.25s ease-out; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.25); box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
+        #page-gastos .form-transacao button.btn-registrar-recebido { background-image: linear-gradient(135deg, var(--cosmos-positive) 0%, #22c55e 100%); }
+        #page-gastos .form-transacao button.btn-registrar-recebido:hover { background-image: linear-gradient(135deg, #16a34a 0%, var(--cosmos-cyan-accent) 100%); }
+        #page-gastos .form-transacao button.btn-registrar-envio { background-image: linear-gradient(135deg, var(--cosmos-negative) 0%, var(--cosmos-pink-accent) 100%); }
+        #page-gastos .form-transacao button.btn-registrar-envio:hover { background-image: linear-gradient(135deg, #ef4444 0%, #d946ef 100%); }
+        #page-gastos .form-transacao button.btn-cancelar { background-color: var(--cosmos-button-cancel-bg); }
+        #page-gastos .form-transacao button:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 10px var(--cosmos-cyan-glow); }
+        #page-gastos .acoes-tabela button { background: transparent; border: 1px solid transparent; color: var(--cosmos-text-secondary); padding: 0.3rem 0.6rem; margin: 0 0.2rem; border-radius: 0.25rem; cursor: pointer; font-size: 1.1em; transition: color 0.2s, border-color 0.2s, transform 0.2s; }
+        #page-gastos .acoes-tabela button:hover { transform: scale(1.1); }
+        #page-gastos .acoes-tabela .btn-editar-gasto:hover { color: var(--cosmos-button-edit-bg); border-color: var(--cosmos-button-edit-bg); }
+        #page-gastos .acoes-tabela .btn-excluir-gasto:hover { color: var(--cosmos-button-delete-text); border-color: var(--cosmos-button-delete-text); }
+        #page-gastos td.editing-row-active { background-color: rgba(167, 139, 250, 0.1) !important; }
+        #page-gastos td.editing-row-active input, #page-gastos td.editing-row-active select {
+             width: 100%; padding: 0.5rem; background-color: var(--cosmos-input-bg);
+             color: var(--cosmos-text-primary); border: 1px solid var(--cosmos-input-focus-border);
+             border-radius: 0.25rem; font-size: 0.9em;
+             box-shadow: 0 0 0 2px var(--cosmos-input-focus-shadow);
+        }
+        #page-gastos .placeholder-mes { text-align: center; padding: 3rem 1rem; font-size: 1.2em; color: var(--cosmos-text-secondary); font-family: var(--font-title); border: 2px dashed var(--cosmos-border); border-radius: 0.75rem; margin-top: 2rem; background-color: rgba(20,25,40,0.5); }
+        #page-gastos .placeholder-mes span { font-size: 2em; display: block; margin-bottom: 0.5rem; animation: pulsePlaceholderIconGastos 2.5s infinite ease-in-out; }
+        @keyframes pulsePlaceholderIconGastos { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } }
+        #page-gastos .confirmation-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 17, 23, 0.88); backdrop-filter: blur(8px) saturate(150%);
+            display: none; justify-content: center; align-items: center; z-index: 4000;
+            opacity: 0; transition: opacity 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); padding: 1rem;
+        }
+        #page-gastos .confirmation-modal-overlay.visible { display: flex; opacity: 1; }
+        #page-gastos .confirmation-modal-content {
+            background: linear-gradient(155deg, var(--cosmos-card-bg), rgba(20, 25, 45, 0.97));
+            padding: 2rem 2.5rem; border-radius: 0.85rem; border: 1px solid var(--cosmos-border-hover);
+            box-shadow: 0 12px 35px var(--cosmos-shadow-strong), 0 0 30px var(--cosmos-shadow-soft-glow), 0 0 15px var(--cosmos-cyan-glow);
+            text-align: center; max-width: 480px; width: 100%;
+            transform: translateY(20px) scale(0.95); opacity: 0;
+            transition: transform 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease-out;
+        }
+        #page-gastos .confirmation-modal-overlay.visible .confirmation-modal-content {
+            transform: translateY(0) scale(1); opacity: 1; transition-delay: 0.05s;
+        }
+        #page-gastos .confirmation-modal-icon {
+            font-size: 3em; margin-bottom: 1rem; display: inline-block;
+            animation: pulsePlaceholderIconGastos 2.2s infinite ease-in-out, rocketTakeOffGastos 0.5s 0.1s ease-out forwards;
+            color: var(--cosmos-cyan-accent); text-shadow: 0 0 10px var(--cosmos-cyan-glow);
+        }
+        @keyframes rocketTakeOffGastos { from { transform: translateY(10px) rotate(-5deg); opacity: 0.5; } to { transform: translateY(0) rotate(0deg); opacity: 1; } }
+        #page-gastos .confirmation-modal-content h3 {
+            font-family: var(--font-title); color: var(--cosmos-purple-secondary);
+            font-size: 1.5em; margin-bottom: 0.8rem; font-weight: 600;
+            text-shadow: 0 0 8px var(--cosmos-purple-secondary);
+        }
+        #page-gastos .confirmation-modal-content p { color: var(--cosmos-text-secondary); margin-bottom: 2rem; font-size: 1em; line-height: 1.6; }
+        #page-gastos .confirmation-modal-actions { display: flex; gap: 1.2rem; justify-content: center; }
+        #page-gastos .confirmation-modal-actions button {
+            border: none; padding: 0.8rem 1.8rem; border-radius: 0.5rem; cursor: pointer;
+            font-weight: 700; font-size: 0.95em; font-family: var(--font-title);
+            transition: all 0.25s ease-out; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 7px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        #page-gastos .confirmation-modal-actions button.btn-confirm { background-image: linear-gradient(135deg, var(--cosmos-negative) 0%, var(--cosmos-pink-accent) 100%); }
+        #page-gastos .confirmation-modal-actions button.btn-confirm:hover {
+            background-image: linear-gradient(135deg, #ef4444 0%, #d946ef 100%);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 15px rgba(236, 72, 153, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        #page-gastos .confirmation-modal-actions button.btn-cancel { background-color: var(--cosmos-button-cancel-bg); color: var(--cosmos-text-primary); }
+        #page-gastos .confirmation-modal-actions button.btn-cancel:hover {
+            background-color: #788190; transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        @media (max-width: 600px) {
+             #page-gastos .confirmation-modal-content { padding: 1.5rem; }
+             #page-gastos .confirmation-modal-icon { font-size: 2.5em; }
+             #page-gastos .confirmation-modal-content h3 { font-size: 1.3em; }
+             #page-gastos .confirmation-modal-content p { font-size: 0.9em; }
+             #page-gastos .confirmation-modal-actions { flex-direction: column; gap: 0.8rem; }
+             #page-gastos .confirmation-modal-actions button { width: 100%; padding: 0.7rem; font-size: 0.9em;}
+        }
+    </style>
+</head>
+<body>
+    <div id="starry-sky-backdrop"></div>
+    <div id="loadingOverlay" class="loading-spinner-overlay"><div class="spinner"></div></div>
+    <div id="notification-container"></div>
+
+    <nav id="main-nav">
+        <a href="patrimonio.html"><button>Patrimônio Estelar</button></a>
+        <a href="index.html"><button>Empréstimos CosmoFin</button></a>
+        <a href="gastos.html"><button class="active">Gastos Cósmicos</button></a>
+    </nav>
+
+    <main id="page-gastos">
+        <div class="container">
+            <header>
+                <h1>Controle de Gastos Cósmicos</h1>
+            </header>
+            <div class="date-selector-control">
+                <label for="gastosDatePickerMesAno">Analisar Mês/Ano:</label>
+                <input type="month" id="gastosDatePickerMesAno">
+            </div>
+            <div id="gastosMesDetalhesContainer">
+                <div class="placeholder-mes">
+                    <span>🌠</span>
+                    Selecione um mês/ano para análise intergaláctica de gastos.
+                </div>
+            </div>
+        </div>
+        <div id="gastosConfirmationModalOverlay" class="confirmation-modal-overlay">
+            <div class="confirmation-modal-content">
+                <div class="confirmation-modal-icon">🚀</div>
+                <h3 id="gastosConfirmationModalTitle">Confirmar Ação Cósmica</h3>
+                <p id="gastosConfirmationModalMessage">Você tem certeza?</p>
+                <div class="confirmation-modal-actions">
+                    <button id="gastosConfirmModalButton" class="btn-confirm">Confirmar Ejeção</button>
+                    <button id="gastosCancelModalButton" class="btn-cancel">Cancelar Manobra</button>
+                </div>
+            </div>
+        </div>
+        <template id="gastosFormTransacaoTemplate">
+            <form class="form-transacao">
+                <h3 id="gastosFormTransacaoTitulo">Adicionar Nova Transação Cósmica</h3>
+                <div class="form-grid">
+                    <div><label for="gastosTransData">Data da Transação:</label><input type="date" id="gastosTransData" required></div>
+                    <div><label for="gastosTransMotivo">Motivo/Descrição:</label><input type="text" id="gastosTransMotivo" placeholder="Ex: Compra de combustível de foguete" required></div>
+                    <div><label for="gastosTransQuem">Quem/Origem/Destino:</label><input type="text" id="gastosTransQuem" placeholder="Ex: Estação Espacial Alfa" required></div>
+                    <div><label for="gastosTransValor">Valor (R$):</label><input type="number" id="gastosTransValor" step="0.01" placeholder="Ex: 150.75" required></div>
+                </div>
+                <div class="botoes-form">
+                    <button type="button" class="btn-cancelar" onclick="cancelarAdicaoEdicaoTransacaoGastos()">Cancelar</button>
+                    <button type="button" class="btn-registrar-recebido">Entrada</button>
+                    <button type="button" class="btn-registrar-envio">Saida</button>
+                </div>
+            </form>
+        </template>
+    </main>
+
+    <script type="module">
+        // --- Firebase Configurations and Initializations ---
+        const firebaseConfigPatrimonio = { /* ...config... */ }; // Kept for consistency if other scripts reference it
+        const firebaseConfigpharcal = { /* ...config... */ }; // Kept for consistency
+        const firebaseConfigGastos = {
+            apiKey: "AIzaSyBVrRGEqr8t8dD8ikEcguuyu1rb9yPHB3o",
+            authDomain: "controle-de-gastos-c41d6.firebaseapp.com",
+            databaseURL: "https://controle-de-gastos-c41d6-default-rtdb.firebaseio.com",
+            projectId: "controle-de-gastos-c41d6",
+            storageBucket: "controle-de-gastos-c41d6.firebasestorage.app",
+            messagingSenderId: "470879933809",
+            appId: "1:470879933809:web:6fc9642396cdcf4b46d2d0",
+            measurementId: "G-4W5D5KL09M"
+        };
+      
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, get, set, update, push, remove, onValue, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        // Initialize Firebase Apps with unique names
+        const appPatrimonio = initializeApp(firebaseConfigPatrimonio, 'patrimonioApp');
+        const appEmprestimos = initializeApp(firebaseConfigpharcal, 'emprestimosApp');
+        const appGastos = initializeApp(firebaseConfigGastos, 'gastosApp');
+      
+        // Store common DB functions globally
+        window.firebaseDbFunctions = { ref, get, set, update, push, remove, onValue, child };
+
+        const loadingOverlayGlobalEl = document.getElementById('loadingOverlay');
+        function showGlobalLoading() { if(loadingOverlayGlobalEl) loadingOverlayGlobalEl.classList.add('visible'); }
+        function hideGlobalLoading() { if(loadingOverlayGlobalEl) loadingOverlayGlobalEl.classList.remove('visible'); }
+
+        function showGlobalNotification(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            const notification = document.createElement('div');
+            notification.classList.add('notification-popup', type);
+            const iconSpan = document.createElement('span');
+            iconSpan.classList.add('icon');
+            let iconChar = '';
+            switch (type) {
+                case 'success': iconChar = '✔️'; break;
+                case 'error':   iconChar = '❌'; break;
+                case 'warning': iconChar = '⚠️'; break;
+                case 'info':    iconChar = 'ℹ️'; break;
+            }
+            iconSpan.textContent = iconChar;
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = message;
+            notification.appendChild(iconSpan);
+            notification.appendChild(messageSpan);
+            container.prepend(notification);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => { notification.classList.add('show'); });
+            });
+            let timerId = setTimeout(() => dismissNotification(), duration);
+            const dismissNotification = () => {
+                notification.classList.remove('show');
+                notification.addEventListener('transitionend', () => notification.remove(), { once: true });
+                setTimeout(() => { if (notification.parentElement) notification.remove(); }, 500);
+            };
+            notification.addEventListener('click', () => { clearTimeout(timerId); dismissNotification(); });
+        }
+        window.showNotification = showGlobalNotification; 
+
+        // --- Gastos Page Script ---
+        function initGastosPage() {
+            const database = getDatabase(appGastos);
+            const { ref, get, set, update, push, remove, child, onValue } = window.firebaseDbFunctions;
+            const gastosView = document.getElementById('page-gastos');
+            const DB_PATH_ROOT_GASTOS = 'gastosGlobais';
+            let todosOsGastosCache = {};
+            let editandoTransacaoIdGastos = null;
+            let currentEditingRowGastos = null;
+            let dataSelecionadaAtualGastos = { ano: null, mes: null };
+            let graficoGastosPorMotivoInstanceGastos = null;
+            let graficoEntradaSaidaInstanceGastos = null;
+            const datePickerMesAnoEl = gastosView.querySelector('#gastosDatePickerMesAno');
+            const mesDetalhesContainerEl = gastosView.querySelector('#gastosMesDetalhesContainer');
+            const formTransacaoTemplate = gastosView.querySelector('#gastosFormTransacaoTemplate');
+            const confirmationModalOverlayEl = gastosView.querySelector('#gastosConfirmationModalOverlay');
+            const confirmationModalTitleEl = gastosView.querySelector('#gastosConfirmationModalTitle');
+            const confirmationModalMessageEl = gastosView.querySelector('#gastosConfirmationModalMessage');
+            let confirmModalButtonEl = gastosView.querySelector('#gastosConfirmModalButton');
+            let cancelModalButtonEl = gastosView.querySelector('#gastosCancelModalButton');
+            
+            const mesesNomes = { "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril", "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto", "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro" };
+            const COSMIC_COLORS = ['rgba(106, 242, 240, 0.7)','rgba(167, 139, 250, 0.7)','rgba(236, 72, 153, 0.7)','rgba(52, 211, 153, 0.7)','rgba(251, 191, 36, 0.7)','rgba(96, 165, 250, 0.7)','rgba(192, 132, 252, 0.7)','rgba(248, 113, 113, 0.7)'];
+            let currentEscListenerGastos = null;
+
+            function showConfirmationModalGastos(title, message, onConfirmCallback, onCancelCallback = null) {
+                if (!confirmationModalTitleEl || !confirmationModalMessageEl || !confirmationModalOverlayEl || !confirmModalButtonEl || !cancelModalButtonEl) {
+                    if (window.confirm(`${title}\n${message}`)) {
+                        if (onConfirmCallback) onConfirmCallback();
+                    } else {
+                        if (onCancelCallback) onCancelCallback();
+                    }
+                    return;
+                }
+                confirmationModalTitleEl.textContent = title;
+                confirmationModalMessageEl.textContent = message;
+                confirmationModalOverlayEl.classList.add('visible');
+                const newConfirmBtn = confirmModalButtonEl.cloneNode(true);
+                confirmModalButtonEl.parentNode.replaceChild(newConfirmBtn, confirmModalButtonEl);
+                confirmModalButtonEl = newConfirmBtn;
+                const newCancelBtn = cancelModalButtonEl.cloneNode(true);
+                cancelModalButtonEl.parentNode.replaceChild(newCancelBtn, cancelModalButtonEl);
+                cancelModalButtonEl = newCancelBtn;
+                confirmModalButtonEl.onclick = () => { hideConfirmationModalGastos(); if (onConfirmCallback) onConfirmCallback(); };
+                cancelModalButtonEl.onclick = () => { hideConfirmationModalGastos(); if (onCancelCallback) onCancelCallback(); };
+                const overlayClickListener = (event) => { if (event.target === confirmationModalOverlayEl) { hideConfirmationModalGastos(); if (onCancelCallback) onCancelCallback(); } };
+                confirmationModalOverlayEl.addEventListener('click', overlayClickListener);
+                if (currentEscListenerGastos) document.removeEventListener('keydown', currentEscListenerGastos);
+                currentEscListenerGastos = (event) => { if (event.key === "Escape") { hideConfirmationModalGastos(); if (onCancelCallback) onCancelCallback(); } };
+                document.addEventListener('keydown', currentEscListenerGastos);
+                const originalHide = hideConfirmationModalGastos;
+                hideConfirmationModalGastos = () => {
+                    originalHide();
+                    confirmationModalOverlayEl.removeEventListener('click', overlayClickListener);
+                    if (currentEscListenerGastos) { document.removeEventListener('keydown', currentEscListenerGastos); currentEscListenerGastos = null; }
+                    hideConfirmationModalGastos = originalHide;
+                };
+            }
+            function hideConfirmationModalGastos() { if(confirmationModalOverlayEl) confirmationModalOverlayEl.classList.remove('visible'); }
+            function formatCurrencyGastos(value) { if (typeof value !== 'number') value = parseFloat(value) || 0; return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+            function formatDateForInputGastos(dateObj) { if (!dateObj || !dateObj.year || !dateObj.month || !dateObj.day) return ''; return `${dateObj.year}-${String(dateObj.month).padStart(2, '0')}-${String(dateObj.day).padStart(2, '0')}`; }
+            function setDefaultMonthPickerGastos() {
+                const anos = Object.keys(todosOsGastosCache).sort((a, b) => b - a);
+                if (anos.length > 0) {
+                    const anoMaisRecente = anos[0];
+                    const mesesDoAno = Object.keys(todosOsGastosCache[anoMaisRecente]).sort((a,b) => b.localeCompare(a, undefined, {numeric: true}));
+                    if (mesesDoAno.length > 0) {
+                        const mesMaisRecente = mesesDoAno[0];
+                        datePickerMesAnoEl.value = `${anoMaisRecente}-${mesMaisRecente}`;
+                        handleDateSelectionGastos(); 
+                    } else { setPickerToCurrentMonthEmptyGastos(); }
+                } else { setPickerToCurrentMonthEmptyGastos(); }
+            }
+            function setPickerToCurrentMonthEmptyGastos() {
+                const hoje = new Date();
+                const anoAtual = hoje.getFullYear();
+                const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+                datePickerMesAnoEl.value = `${anoAtual}-${mesAtual}`;
+                mesDetalhesContainerEl.innerHTML = `<div class="placeholder-mes"><span>🌠</span>Selecione um mês/ano para visualizar ou registrar seus gastos.</div>`;
+                dataSelecionadaAtualGastos = { ano: String(anoAtual), mes: mesAtual };
+            }
+            function calcularTotaisMesGastos(transacoesArray = []) {
+                let totalEntradas = 0; let totalSaidas = 0; let saldoAcumulado = 0;
+                const transacoesOrdenadas = [...transacoesArray].sort((a, b) => new Date(a.data + 'T00:00:00Z') - new Date(b.data + 'T00:00:00Z') || (a.id && b.id ? a.id.localeCompare(b.id) : 0) );
+                const transacoesComSaldo = transacoesOrdenadas.map(tr => {
+                    const valor = parseFloat(tr.valor || 0);
+                    if (tr.tipo === 'entrada') { totalEntradas += valor; saldoAcumulado += valor; }
+                    else { totalSaidas += valor; saldoAcumulado -= valor; }
+                    return { ...tr, valor, saldoApos: saldoAcumulado };
+                });
+                return { totalEntradas, totalSaidas, saldoMes: saldoAcumulado, transacoesComSaldo };
+            }
+            function prepararDadosGraficoGastosGastos(transacoesDoMesArray = []) {
+                if (transacoesDoMesArray.length === 0) { return { labels: [], data: [], colors: [] }; }
+                const gastos = transacoesDoMesArray.filter(t => t.tipo === 'saida');
+                if (gastos.length === 0) { return { labels: [], data: [], colors: [] }; }
+                const gastosPorMotivo = {};
+                gastos.forEach(gasto => {
+                    const motivo = (gasto.motivo || 'NÃO ESPECIFICADO').trim().toUpperCase();
+                    gastosPorMotivo[motivo] = (gastosPorMotivo[motivo] || 0) + parseFloat(gasto.valor || 0);
+                });
+                const labels = Object.keys(gastosPorMotivo);
+                const data = Object.values(gastosPorMotivo);
+                let sortedGastos = [];
+                for (let i=0; i < labels.length; i++) sortedGastos.push({label: labels[i], value: data[i]});
+                sortedGastos.sort((a,b) => b.value - a.value);
+                const topLabels = []; const topData = []; let outrosValor = 0;
+                const maxCategorias = 8;
+                if (sortedGastos.length > maxCategorias) {
+                    for (let i = 0; i < maxCategorias -1; i++) { topLabels.push(sortedGastos[i].label); topData.push(sortedGastos[i].value); }
+                    for (let i = maxCategorias -1; i < sortedGastos.length; i++) outrosValor += sortedGastos[i].value;
+                    if (outrosValor > 0) { topLabels.push("OUTROS GASTOS"); topData.push(outrosValor); }
+                } else { sortedGastos.forEach(item => { topLabels.push(item.label); topData.push(item.value); }); }
+                const colors = topLabels.map((_, index) => COSMIC_COLORS[index % COSMIC_COLORS.length]);
+                return { labels: topLabels, data: topData, colors };
+            }
+            async function renderizarDetalhesDoMesGastos(ano, mes) {
+                showGlobalLoading();
+                mesDetalhesContainerEl.innerHTML = ''; 
+                dataSelecionadaAtualGastos = { ano, mes };
+                const dadosDoMes = todosOsGastosCache[ano]?.[mes];
+                let isMesNovo = !dadosDoMes;
+                let transacoesDoMesArray = [];
+                if (dadosDoMes && dadosDoMes.transacoes) {
+                    transacoesDoMesArray = (typeof dadosDoMes.transacoes === 'object' && !Array.isArray(dadosDoMes.transacoes)) ? Object.entries(dadosDoMes.transacoes).map(([id, trans]) => ({ id, ...trans })) : Array.isArray(dadosDoMes.transacoes) ? dadosDoMes.transacoes : [];
+                } else if (!dadosDoMes) { isMesNovo = true; }
+                const nomeDoMesDisplay = dadosDoMes?.nome || mesesNomes[mes] || `Mês ${mes}`;
+                const anoDisplay = dadosDoMes?.ano || ano;
+                if (isMesNovo) { showGlobalNotification(`Iniciando registros para ${nomeDoMesDisplay} de ${anoDisplay}. Adicione sua primeira transação de gastos.`, "info"); }
+                const { totalEntradas, totalSaidas, saldoMes, transacoesComSaldo } = calcularTotaisMesGastos(transacoesDoMesArray);
+                const secaoHTML = `<section class="secao" data-ano="${ano}" data-mes="${mes}"> <h2>${nomeDoMesDisplay} <span style="color: var(--cosmos-purple-secondary); font-size: 0.8em;">${anoDisplay}</span></h2> <div class="cards-container"> <div class="card"><h3>Entradas Celestiais</h3><p class="positivo">${formatCurrencyGastos(totalEntradas)}</p></div> <div class="card"><h3>Drenos de Energia</h3><p class="negativo">${formatCurrencyGastos(totalSaidas)}</p></div> <div class="card"><h3>Balanço Orbital</h3><p class="${saldoMes < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(saldoMes)}</p></div> </div> <h2 class="sub-titulo-graficos">Análise Visual dos Drenos</h2> <div class="graficos-container"> <div class="grafico-card"><h4 >Gastos por Motivo Galáctico</h4><canvas id="gastosGraficoGastosMotivo"></canvas><div id="gastosGraficoGastosMotivoPlaceholder" class="grafico-placeholder hidden">Sem dados de gastos.</div></div> <div class="grafico-card"><h4>Entradas vs Saídas Cósmicas</h4><canvas id="gastosGraficoEntradaSaida"></canvas><div id="gastosGraficoEntradaSaidaPlaceholder" class="grafico-placeholder hidden">Sem dados suficientes.</div></div> </div> <button class="btn-adicionar-transacao-gastos" style=" border: none; padding: 0.7rem 1.5rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-size: 1em; font-family: var(--font-title); transition: all 0.25s ease-out; color: #fff; background-image: linear-gradient(135deg, var(--cosmos-button-primary-bg-start) 0%, var(--cosmos-button-primary-bg-end) 100%); text-shadow: 0 1px 2px rgba(0,0,0,0.25); margin-top: 2rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);"> Nova Transação de Gastos 🌠 </button> <div id="gastosFormContainer-${ano}-${mes}"></div> ${transacoesComSaldo.length === 0 ? `<div class="placeholder-mes" style="margin-top:1rem; padding: 2rem;"><span>🚀</span>Nenhum registro para ${nomeDoMesDisplay} de ${anoDisplay}.<br>Adicione sua primeira transação!</div>` : `<div class="table-wrapper"> <table> <thead><tr><th>DATA</th><th>MOTIVO</th><th>QUEM</th><th>VALOR</th><th>TIPO</th><th>SALDO APÓS</th><th>AÇÕES</th></tr></thead> <tbody id="gastosTabelaCorpo"> ${transacoesComSaldo.map(tr => ` <tr data-id="${tr.id}"> <td>${new Date(tr.data + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td> <td>${tr.motivo || '-'}</td><td>${tr.quem || '-'}</td> <td class="currency ${tr.tipo === 'entrada' ? 'positivo' : 'negativo'}">${formatCurrencyGastos(tr.valor)}</td> <td class="center-text ${tr.tipo === 'entrada' ? 'positivo' : 'negativo'}">${tr.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td> <td class="currency ${tr.saldoApos < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(tr.saldoApos)}</td> <td class="acoes-tabela"> <button class="btn-editar-gasto" title="Editar">✏️</button> <button class="btn-excluir-gasto" title="Excluir">🗑️</button> </td></tr>`).join('')} </tbody> <tfoot><tr><td colspan="5">TOTAIS DA MISSÃO (${nomeDoMesDisplay.toUpperCase().substring(0,3)}/${String(anoDisplay).substring(2)}):</td><td class="currency ${saldoMes < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(saldoMes)}</td><td></td></tr></tfoot> </table></div>` } </section>`;
+                setTimeout(() => {
+                    mesDetalhesContainerEl.innerHTML = secaoHTML;
+                    const secaoCarregada = mesDetalhesContainerEl.querySelector('.secao');
+                    if (secaoCarregada) {
+                        setTimeout(() => secaoCarregada.classList.add('visible'), 50);
+                        const btnAdicionar = secaoCarregada.querySelector('.btn-adicionar-transacao-gastos');
+                        if (btnAdicionar) btnAdicionar.onclick = () => mostrarFormularioAdicaoGastos(ano, mes);
+                        secaoCarregada.querySelectorAll('.btn-editar-gasto').forEach(btn => { const tr = btn.closest('tr'); const idTransacao = tr.dataset.id; btn.onclick = () => iniciarEdicaoTransacaoGastos(ano, mes, idTransacao, tr); });
+                        secaoCarregada.querySelectorAll('.btn-excluir-gasto').forEach(btn => { const tr = btn.closest('tr'); const idTransacao = tr.dataset.id; btn.onclick = () => excluirTransacaoGastos(ano, mes, idTransacao); });
+                    }
+                    renderizarGraficoGastosPorMotivoGastos(transacoesDoMesArray);
+                    renderizarGraficoEntradaSaidaGastos(totalEntradas, totalSaidas);
+                    hideGlobalLoading();
+                    if (!isMesNovo && transacoesDoMesArray.length > 0 ) { showGlobalNotification(`Dados de gastos de ${nomeDoMesDisplay} de ${anoDisplay} carregados!`, 'success', 2000); }
+                }, 100);
+            }
+            function renderizarGraficoGastosPorMotivoGastos(transacoesDoMesArray = []) {
+                const canvasEl = gastosView.querySelector('#gastosGraficoGastosMotivo'); 
+                const placeholderEl = gastosView.querySelector('#gastosGraficoGastosMotivoPlaceholder');
+                if (!canvasEl || !placeholderEl) return;
+                const { labels, data, colors } = prepararDadosGraficoGastosGastos(transacoesDoMesArray);
+                if (graficoGastosPorMotivoInstanceGastos) graficoGastosPorMotivoInstanceGastos.destroy();
+                if (labels.length === 0 || data.reduce((a, b) => a + b, 0) === 0) { canvasEl.classList.add('hidden'); placeholderEl.classList.remove('hidden'); placeholderEl.textContent = "Sem dados de gastos para exibir no gráfico."; return; }
+                canvasEl.classList.remove('hidden'); placeholderEl.classList.add('hidden');
+                const ctx = canvasEl.getContext('2d');
+                graficoGastosPorMotivoInstanceGastos = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ label: 'Gastos por Motivo', data: data, backgroundColor: colors, borderColor: '#0D1117', borderWidth: 2, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--cosmos-text-secondary)', font: { family: 'var(--font-body)', size: 10 }, boxWidth: 15, padding: 15 } }, tooltip: { backgroundColor: 'rgba(13,17,23,0.9)', titleFont: { family: 'var(--font-title)'}, bodyFont: { family: 'var(--font-body)'}, titleColor: 'var(--cosmos-cyan-accent)', bodyColor: 'var(--cosmos-text-primary)', borderColor: 'var(--cosmos-cyan-accent)', borderWidth: 1, callbacks: { label: function(context) { let label = context.label || ''; if (label) label += ': '; if (context.parsed !== null) { label += formatCurrencyGastos(context.parsed); const total = context.dataset.data.reduce((sum, val) => sum + val, 0); const percentage = total > 0 ? (context.parsed / total * 100).toFixed(1) : 0; label += ` (${percentage}%)`; } return label; } } } }, animation: { animateRotate: true, animateScale: true }, layout: { padding: 5 } } });
+            }
+            function renderizarGraficoEntradaSaidaGastos(totalEntradas, totalSaidas) {
+                const canvasEl = gastosView.querySelector('#gastosGraficoEntradaSaida'); 
+                const placeholderEl = gastosView.querySelector('#gastosGraficoEntradaSaidaPlaceholder');
+                if (!canvasEl || !placeholderEl) return;
+                if(graficoEntradaSaidaInstanceGastos) graficoEntradaSaidaInstanceGastos.destroy();
+                if (totalEntradas === 0 && totalSaidas === 0) { canvasEl.classList.add('hidden'); placeholderEl.classList.remove('hidden'); placeholderEl.textContent = "Sem dados de entradas ou saídas para exibir."; return; }
+                canvasEl.classList.remove('hidden'); placeholderEl.classList.add('hidden');
+                const ctx = canvasEl.getContext('2d');
+                graficoEntradaSaidaInstanceGastos = new Chart(ctx, { type: 'pie', data: { labels: ['Entradas Celestiais', 'Drenos de Energia'], datasets: [{ data: [totalEntradas, totalSaidas], backgroundColor: ['rgba(52, 211, 153, 0.7)', 'rgba(248, 113, 113, 0.7)'], borderColor: ['var(--cosmos-positive)','var(--cosmos-negative)'], borderWidth: 2, hoverOffset: 8, hoverBorderColor: 'var(--cosmos-text-primary)'}] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--cosmos-text-secondary)', font: { family: 'var(--font-body)', size: 11 }, boxWidth: 18, padding: 15 } }, tooltip: { backgroundColor: 'rgba(13,17,23,0.9)', titleFont: { family: 'var(--font-title)'}, bodyFont: { family: 'var(--font-body)'}, titleColor: 'var(--cosmos-cyan-accent)', bodyColor: 'var(--cosmos-text-primary)', borderColor: 'var(--cosmos-cyan-accent)', borderWidth: 1, callbacks: { label: function(context) { return `${context.label}: ${formatCurrencyGastos(context.raw)}`; } } } }, animation: { animateRotate: true, animateScale: false } } });
+            }
+            function mostrarFormularioAdicaoGastos(ano, mes) {
+                cancelarAdicaoEdicaoTransacaoGastos(); 
+                const formContainerId = `gastosFormContainer-${ano}-${mes}`;
+                const formContainer = gastosView.querySelector(`#${formContainerId}`);
+                if (!formContainer) { showGlobalNotification(`Erro interno: Não foi possível encontrar o local para exibir o formulário de gastos. (ID: ${formContainerId})`, "error"); return; }
+                const formClone = formTransacaoTemplate.content.cloneNode(true); 
+                const formElement = formClone.querySelector('form');
+                formContainer.appendChild(formClone);
+                const h3 = formElement.querySelector('#gastosFormTransacaoTitulo');
+                const dataInput = formElement.querySelector('#gastosTransData');
+                const btnRegistrarRecebido = formElement.querySelector('.btn-registrar-recebido');
+                const btnRegistrarEnvio = formElement.querySelector('.btn-registrar-envio');
+                editandoTransacaoIdGastos = null; 
+                h3.textContent = 'Adicionar Nova Transação de Gastos';
+                const dataSelecionadaNoPicker = { year: parseInt(dataSelecionadaAtualGastos.ano), month: parseInt(dataSelecionadaAtualGastos.mes) };
+                const hoje = new Date(); let diaSugerido = hoje.getDate();
+                if (!(dataSelecionadaNoPicker.year === hoje.getFullYear() && dataSelecionadaNoPicker.month === (hoje.getMonth() + 1))) diaSugerido = 1;
+                if (dataSelecionadaNoPicker.year && dataSelecionadaNoPicker.month) { dataInput.value = formatDateForInputGastos({ year: dataSelecionadaNoPicker.year, month: dataSelecionadaNoPicker.month, day: diaSugerido}); dataInput.min = `${dataSelecionadaNoPicker.year}-${String(dataSelecionadaNoPicker.month).padStart(2, '0')}-01`; const ultimoDiaDoMes = new Date(dataSelecionadaNoPicker.year, dataSelecionadaNoPicker.month, 0).getDate(); dataInput.max = `${dataSelecionadaNoPicker.year}-${String(dataSelecionadaNoPicker.month).padStart(2, '0')}-${String(ultimoDiaDoMes).padStart(2, '0')}`; } 
+                else { dataInput.valueAsDate = new Date(); }
+                btnRegistrarRecebido.onclick = () => { salvarTransacaoFirebaseGastos(ano, mes, formElement, 'entrada'); };
+                btnRegistrarEnvio.onclick = () => { salvarTransacaoFirebaseGastos(ano, mes, formElement, 'saida'); };
+            }
+            async function salvarTransacaoFirebaseGastos(ano, mes, formElement, tipoTransacao) {
+                showGlobalLoading();
+                const data = formElement.querySelector('#gastosTransData').value;
+                const motivo = formElement.querySelector('#gastosTransMotivo').value.trim();
+                const quem = formElement.querySelector('#gastosTransQuem').value.trim();
+                const valor = parseFloat(formElement.querySelector('#gastosTransValor').value);
+                if (!data || !motivo || !quem || isNaN(valor) || valor <= 0) { showGlobalNotification("Todos os campos de gastos são obrigatórios e o valor deve ser positivo.", "warning"); hideGlobalLoading(); return; }
+                const transacaoData = { data, motivo, quem, valor, tipo: tipoTransacao };
+                const mesPath = `${DB_PATH_ROOT_GASTOS}/${ano}/${mes}`;
+                try {
+                    const mesMetaRef = ref(database, mesPath);
+                    const mesSnapshot = await get(mesMetaRef);
+                    if (!mesSnapshot.exists() || !mesSnapshot.val()?.nome) { await update(mesMetaRef, { nome: mesesNomes[mes] || `Mês ${mes}`, ano: ano }); }
+                    const transacoesRef = ref(database, `${mesPath}/transacoes`);
+                    const novaTransacaoRef = push(transacoesRef);
+                    await set(novaTransacaoRef, transacaoData);
+                    showGlobalNotification(`Transação de gastos (${tipoTransacao}) registrada!`, "success");
+                    editandoTransacaoIdGastos = null;
+                    cancelarAdicaoEdicaoTransacaoGastos();
+                } catch (error) { console.error("Erro ao salvar transação de gastos no Firebase:", error); showGlobalNotification("Falha ao comunicar com a base de gastos.", "error");
+                } finally { hideGlobalLoading(); }
+            }
+            async function excluirTransacaoGastos(ano, mes, idTransacaoFirebase) {
+                showConfirmationModalGastos( "Confirmar Ejeção de Gasto", "Tem certeza que deseja ejetar este registro de gasto? Esta manobra não pode ser desfeita.",
+                    async () => {
+                        showGlobalLoading();
+                        const transacaoRef = ref(database, `${DB_PATH_ROOT_GASTOS}/${ano}/${mes}/transacoes/${idTransacaoFirebase}`);
+                        try { await remove(transacaoRef); showGlobalNotification("Registro de gasto ejetado!", "info");
+                        } catch (error) { console.error("Erro ao excluir transação de gastos:", error); showGlobalNotification("Falha ao ejetar registro de gasto.", "error");
+                        } finally { hideGlobalLoading(); }
+                    },
+                    () => { showGlobalNotification("Ejeção de gasto cancelada.", "info"); }
+                );
+            }
+            window.cancelarAdicaoEdicaoTransacaoGastos = function() {
+                const { ano, mes } = dataSelecionadaAtualGastos;
+                if (ano && mes) { const formContainer = gastosView.querySelector(`#gastosFormContainer-${ano}-${mes}`); if (formContainer) formContainer.innerHTML = ''; }
+                editandoTransacaoIdGastos = null;
+                if (currentEditingRowGastos) { restaurarLinhaTabelaGastos(currentEditingRowGastos, false); currentEditingRowGastos = null; }
+            }
+            function iniciarEdicaoTransacaoGastos(ano, mes, idTransacao, trElement) {
+                cancelarAdicaoEdicaoTransacaoGastos(); 
+                if (currentEditingRowGastos && currentEditingRowGastos !== trElement) { restaurarLinhaTabelaGastos(currentEditingRowGastos, false); }
+                currentEditingRowGastos = trElement; editandoTransacaoIdGastos = idTransacao;
+                let transacaoOriginalCache = null;
+                if (todosOsGastosCache[ano] && todosOsGastosCache[ano][mes] && todosOsGastosCache[ano][mes].transacoes) {
+                    const transacoesObj = todosOsGastosCache[ano][mes].transacoes;
+                    if(typeof transacoesObj === 'object' && !Array.isArray(transacoesObj)) { if(transacoesObj[idTransacao]) { transacaoOriginalCache = { id: idTransacao, ...transacoesObj[idTransacao] }; } } 
+                    else if (Array.isArray(transacoesObj)) { transacaoOriginalCache = transacoesObj.find(t => t.id === idTransacao); }
+                }
+                const transacao = transacaoOriginalCache;
+                if (!transacao) { console.error("Transação não encontrada no cache para edição:", ano, mes, idTransacao); showGlobalNotification("Erro: Transação não encontrada para editar.", "error"); currentEditingRowGastos = null; return; }
+                trElement.classList.add('editing-row-active'); 
+                trElement.cells[0].innerHTML = `<input type="date" value="${transacao.data}" class="edit-inline-data-gasto" min="${ano}-${mes}-01" max="${ano}-${mes}-${new Date(parseInt(ano), parseInt(mes), 0).getDate()}">`;
+                trElement.cells[1].innerHTML = `<input type="text" value="${transacao.motivo}" class="edit-inline-motivo-gasto">`;
+                trElement.cells[2].innerHTML = `<input type="text" value="${transacao.quem}" class="edit-inline-quem-gasto">`;
+                trElement.cells[3].innerHTML = `<input type="number" step="0.01" value="${transacao.valor}" class="edit-inline-valor-gasto">`;
+                trElement.cells[4].innerHTML = `<select class="edit-inline-tipo-gasto"><option value="entrada" ${transacao.tipo === 'entrada' ? 'selected' : ''}>Entrada</option><option value="saida" ${transacao.tipo === 'saida' ? 'selected' : ''}>Saída</option></select>`;
+                trElement.cells[6].innerHTML = `<button title="Salvar" class="btn-salvar-inline-gasto">💾</button><button title="Cancelar" class="btn-cancelar-inline-gasto">↩️</button>`;
+                trElement.querySelector('.btn-salvar-inline-gasto').onclick = () => salvarEdicaoInlineFirebaseGastos(ano, mes, idTransacao, trElement);
+                trElement.querySelector('.btn-cancelar-inline-gasto').onclick = () => restaurarLinhaTabelaGastos(trElement, true);
+            }
+            async function salvarEdicaoInlineFirebaseGastos(ano, mes, idTransacaoFirebase, trElement) {
+                showGlobalLoading();
+                const data = trElement.querySelector('.edit-inline-data-gasto').value;
+                const motivo = trElement.querySelector('.edit-inline-motivo-gasto').value.trim();
+                const quem = trElement.querySelector('.edit-inline-quem-gasto').value.trim();
+                const valor = parseFloat(trElement.querySelector('.edit-inline-valor-gasto').value);
+                const tipo = trElement.querySelector('.edit-inline-tipo-gasto').value;
+                if (!data || !motivo || !quem || isNaN(valor) || valor <= 0) { showGlobalNotification("Campos de gasto inválidos.", "warning"); hideGlobalLoading(); return; }
+                const transacaoData = { data, motivo, quem, valor, tipo };
+                const transacaoRef = ref(database, `${DB_PATH_ROOT_GASTOS}/${ano}/${mes}/transacoes/${idTransacaoFirebase}`);
+                try {
+                    await update(transacaoRef, transacaoData); showGlobalNotification("Alterações de gasto sincronizadas!", "success");
+                    editandoTransacaoIdGastos = null; currentEditingRowGastos = null;
+                } catch (error) { console.error("Erro ao salvar edição inline de gastos:", error); showGlobalNotification("Falha ao sincronizar edição de gasto.", "error"); restaurarLinhaTabelaGastos(trElement, false);
+                } finally { hideGlobalLoading(); }
+            }
+            function restaurarLinhaTabelaGastos(trElement, reRenderizarMesCompleto = true) {
+                const { ano, mes } = dataSelecionadaAtualGastos;
+                if (reRenderizarMesCompleto && ano && mes) { renderizarDetalhesDoMesGastos(ano, mes); } 
+                else if (trElement && todosOsGastosCache[ano]?.[mes] && todosOsGastosCache[ano]?.[mes]?.transacoes) {
+                    const idTransacao = trElement.dataset.id;
+                    let transacaoOriginal = null;
+                    const transacoesObj = todosOsGastosCache[ano][mes].transacoes;
+                    if(typeof transacoesObj === 'object' && !Array.isArray(transacoesObj) && transacoesObj[idTransacao]) { transacaoOriginal = { id: idTransacao, ...transacoesObj[idTransacao] }; } 
+                    else if (Array.isArray(transacoesObj)) { transacaoOriginal = transacoesObj.find(t => t.id === idTransacao); }
+                    if (transacaoOriginal) {
+                        trElement.cells[0].textContent = new Date(transacaoOriginal.data + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+                        trElement.cells[1].textContent = transacaoOriginal.motivo || '-'; trElement.cells[2].textContent = transacaoOriginal.quem || '-';
+                        trElement.cells[3].className = `currency ${transacaoOriginal.tipo === 'entrada' ? 'positivo' : 'negativo'}`; trElement.cells[3].textContent = formatCurrencyGastos(transacaoOriginal.valor);
+                        trElement.cells[4].className = `center-text ${transacaoOriginal.tipo === 'entrada' ? 'positivo' : 'negativo'}`; trElement.cells[4].textContent = transacaoOriginal.tipo === 'entrada' ? 'Entrada' : 'Saída';
+                        trElement.cells[5].textContent = "Recalculando...";
+                        trElement.cells[6].innerHTML = `<button class="btn-editar-gasto" title="Editar">✏️</button><button class="btn-excluir-gasto" title="Excluir">🗑️</button>`;
+                        trElement.querySelector('.btn-editar-gasto').onclick = () => iniciarEdicaoTransacaoGastos(ano, mes, idTransacao, trElement);
+                        trElement.querySelector('.btn-excluir-gasto').onclick = () => excluirTransacaoGastos(ano, mes, idTransacao);
+                        trElement.classList.remove('editing-row-active');
+                    } else { if (ano && mes) renderizarDetalhesDoMesGastos(ano, mes); }
+                }
+                currentEditingRowGastos = null; editandoTransacaoIdGastos = null;
+            }
+            async function handleDateSelectionGastos() {
+                const valorSelecionado = datePickerMesAnoEl.value;
+                if (valorSelecionado) { const [anoStr, mesStr] = valorSelecionado.split('-'); dataSelecionadaAtualGastos = { ano: anoStr, mes: mesStr }; await renderizarDetalhesDoMesGastos(anoStr, mesStr); } 
+                else { mesDetalhesContainerEl.innerHTML = `<div class="placeholder-mes"><span>🌠</span>Selecione um mês/ano para análise de gastos.</div>`; dataSelecionadaAtualGastos = { ano: null, mes: null }; }
+            }
+            if(datePickerMesAnoEl) datePickerMesAnoEl.addEventListener('change', handleDateSelectionGastos);
+            const gastosDbRef = ref(database, DB_PATH_ROOT_GASTOS);
+            onValue(gastosDbRef, (snapshot) => {
+                showGlobalLoading();
+                if (snapshot.exists()) { todosOsGastosCache = snapshot.val(); } 
+                else { todosOsGastosCache = {}; }
+                if (dataSelecionadaAtualGastos.ano && dataSelecionadaAtualGastos.mes) { renderizarDetalhesDoMesGastos(dataSelecionadaAtualGastos.ano, dataSelecionadaAtualGastos.mes); } 
+                else { setDefaultMonthPickerGastos(); }
+            }, (error) => {
+                console.error("Erro ao escutar dados de Gastos do Firebase:", error);
+                showGlobalNotification("Falha na conexão em tempo real com a base de gastos.", "error");
+                todosOsGastosCache = {};
+                setDefaultMonthPickerGastos(); 
+                hideGlobalLoading();
+            });
+      }
+
+      // --- Initialize the Gastos page ---
+      document.addEventListener('DOMContentLoaded', () => {
+          initGastosPage();
+      });
+
+    </script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker registrado!', reg))
+            .catch(err => console.error('Erro no Service Worker:', err));
+        });
+      }
+    </script>
+
+</body>
+</html>

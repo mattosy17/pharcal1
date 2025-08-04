@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empréstimos CosmoFin - Painel Cosmos</title>
+    
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#8B5CF6" />
+
+    <!-- CDNs (Consolidated) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/3.6.0/locale/pt-BR.min.js" integrity="sha512-rZ8VOUgoR7U3X3z09kqX0vaJ8cMhJ7j3REKHx34kF3oAgCR2vVdSwyXFpXg4DCH91iHptQ3e51Z4BStx2kU/wA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Fonts (Consolidated) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌠</text></svg>">
+
+    <style>
+        /* --- GLOBAL RESET & BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        /* --- GLOBAL CSS VARIABLES --- */
+        :root {
+            --font-body: 'Inter', sans-serif;
+            --font-title: 'Orbitron', sans-serif;
+            --cosmos-bg: #0D1117;
+            --cosmos-text-primary: #E0E0E0;
+            --cosmos-text-secondary: #A0AEC0;
+            --cosmos-card-bg: rgba(29, 29, 40, 0.88);
+            --cosmos-border: rgba(124, 58, 237, 0.40);
+            --cosmos-border-hover: rgba(167, 139, 250, 0.7);
+            --cosmos-shadow-strong: rgba(0, 0, 0, 0.55);
+            --cosmos-shadow-soft-glow: rgba(167, 139, 250, 0.12);
+            --cosmos-purple-primary: #A78BFA;
+            --cosmos-purple-secondary: #C4B5FD;
+            --cosmos-purple-dark: #8B5CF6;
+            --cosmos-blue-accent: #60A5FA;
+            --cosmos-pink-accent: #EC4899;
+            --cosmos-cyan-accent: #6AF2F0;
+            --cosmos-cyan-glow: rgba(106, 242, 240, 0.35);
+            --cosmos-positive: #34D399;
+            --cosmos-negative: #F87171;
+            --cosmos-warning: #FBBF24;
+            --cosmos-input-bg: rgba(13, 17, 23, 0.92);
+            --cosmos-input-border: rgba(124, 58, 237, 0.45);
+            --cosmos-input-focus-border: var(--cosmos-purple-primary);
+            --cosmos-input-focus-shadow: rgba(167, 139, 250, 0.45);
+            
+            /* Styles specific to emprestimos page */
+            --index-button-primary-gradient-start: #8B5CF6;
+            --index-button-primary-gradient-end: #6366F1;
+            --index-button-primary-hover-gradient-start: #7C3AED;
+            --index-button-primary-hover-gradient-end: #4F46E5;
+        }
+
+        body {
+            font-family: var(--font-body);
+            line-height: 1.6;
+            background-color: var(--cosmos-bg);
+            color: var(--cosmos-text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            padding-top: 70px; 
+        }
+        
+        #starry-sky-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+            background-image:
+                radial-gradient(ellipse at center, rgba(30, 27, 75, 0.12) 0%, transparent 70%),
+                radial-gradient(ellipse at top left, rgba(80, 30, 70, 0.1) 0%, transparent 60%),
+                radial-gradient(ellipse at bottom right, rgba(20, 50, 90, 0.1) 0%, transparent 60%),
+                radial-gradient(circle at 10% 20%, rgba(210, 210, 255, 0.6) 0.5px, transparent 1px),
+                radial-gradient(circle at 30% 50%, rgba(190, 210, 255, 0.5) 0.5px, transparent 1px),
+                radial-gradient(circle at 70% 30%, rgba(220, 200, 255, 0.7) 0.5px, transparent 1px),
+                radial-gradient(circle at 90% 60%, rgba(200, 200, 255, 0.4) 0.5px, transparent 1px),
+                radial-gradient(circle at 50% 80%, rgba(220, 200, 255, 0.6) 0.5px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 70px 70px, 60px 60px, 80px 80px, 90px 90px;
+            opacity: 0;
+            animation: subtleStarShine 35s infinite alternate ease-in-out, fadeInBg 3s 0.5s ease-out forwards;
+            pointer-events: none; will-change: opacity, transform;
+        }
+        @keyframes subtleStarShine { 0% { opacity: 0.6; transform: scale(1.005) rotate(0.05deg); } 100% { opacity: 0.9; transform: scale(1) rotate(-0.05deg); } }
+        @keyframes fadeInBg { to { opacity: 0.85; } }
+
+        /* --- NAVIGATION --- */
+        #main-nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background-color: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(10px) saturate(150%);
+            padding: 0.75rem 1.5rem;
+            display: flex; justify-content: center; align-items: center; gap: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); z-index: 1000;
+            border-bottom: 1px solid var(--cosmos-border);
+        }
+        #main-nav a {
+            font-family: var(--font-title); font-size: 0.9em; font-weight: 500;
+            color: var(--cosmos-text-secondary); background-color: transparent;
+            border: 1px solid transparent; padding: 0.5rem 1rem; border-radius: 0.375rem;
+            cursor: pointer;
+            transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            text-decoration: none;
+        }
+        #main-nav a:hover {
+            color: var(--cosmos-text-primary);
+            background-color: rgba(167, 139, 250, 0.1);
+            border-color: var(--cosmos-purple-primary);
+            transform: translateY(-2px);
+        }
+        #main-nav a.active {
+            color: var(--cosmos-cyan-accent);
+            background-color: rgba(106, 242, 240, 0.15);
+            border-color: var(--cosmos-cyan-accent);
+            box-shadow: 0 0 10px var(--cosmos-cyan-glow);
+            font-weight: 700;
+        }
+        
+        /* --- GLOBAL UTILITIES --- */
+        .loading-spinner-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 17, 23, 0.7); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 2000; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+        }
+        .loading-spinner-overlay.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .spinner {
+            width: 60px; height: 60px; border: 5px solid rgba(106, 242, 240, 0.2);
+            border-top-color: var(--cosmos-cyan-accent); border-radius: 50%;
+            animation: spin 1s linear infinite, pulseSpinnerGlow 2s infinite alternate;
+            box-shadow: 0 0 15px var(--cosmos-cyan-glow);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulseSpinnerGlow {
+            from { box-shadow: 0 0 10px rgba(106, 242, 240, 0.3); }
+            to { box-shadow: 0 0 25px rgba(106, 242, 240, 0.6); }
+        }
+
+        #notification-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+            display: flex; flex-direction: column-reverse; gap: 10px;
+        }
+        .notification-popup {
+            font-family: var(--font-body); background-color: var(--cosmos-card-bg);
+            color: var(--cosmos-text-primary); padding: 12px 18px; border-radius: 0.5rem;
+            border-left: 5px solid var(--cosmos-blue-accent);
+            box-shadow: 0 5px 20px var(--cosmos-shadow-strong), 0 0 12px var(--cosmos-shadow-soft-glow);
+            opacity: 0; transform: translateX(120%);
+            transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-width: 280px; max-width: 380px; font-size: 0.9em; line-height: 1.45;
+            display: flex; align-items: center; cursor: pointer;
+        }
+        .notification-popup.show { opacity: 1; transform: translateX(0); }
+        .notification-popup.success { border-left-color: var(--cosmos-positive); }
+        .notification-popup.error { border-left-color: var(--cosmos-negative); }
+        .notification-popup.warning { border-left-color: var(--cosmos-warning); }
+        .notification-popup.info { border-left-color: var(--cosmos-blue-accent); }
+        .notification-popup .icon { margin-right: 12px; font-size: 1.3em; line-height: 1; }
+        .notification-popup.success .icon { color: var(--cosmos-positive); }
+        .notification-popup.error .icon { color: var(--cosmos-negative); }
+        .notification-popup.warning .icon { color: var(--cosmos-warning); }
+        .notification-popup.info .icon { color: var(--cosmos-blue-accent); }
+
+        .page-view { padding: 2rem; }
+        .container { max-width: 1300px; margin: 0 auto; width: 100%; } 
+        .hidden { display: none !important; }
+
+        /* --- STYLES FOR EMPRÉSTIMOS PAGE (Scoped to #page-emprestimos) --- */
+        #page-emprestimos .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        #page-emprestimos .total-counter-wrapper {
+            position: fixed;
+            top: 85px;
+            right: 20px;
+            z-index: 950;
+            pointer-events: none;
+            display: flex; /* Changed from none to flex */
+        }
+        #page-emprestimos .total-counter-container {
+            pointer-events: auto;
+            position: relative;
+            background: linear-gradient(145deg, rgba(124, 58, 237, 0.25), rgba(99, 102, 241, 0.2)); 
+            border: 1px solid rgba(167, 139, 250, 0.4); 
+            color: #E0E0E0; border-radius: 50px; 
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), inset 0 0 10px rgba(124, 58, 237, 0.1);
+            white-space: nowrap; display: flex; flex-direction: column; align-items: stretch;
+            cursor: pointer; overflow: hidden;
+            min-height: calc(1.1em + 1.4rem); max-height: calc(1.1em + 1.4rem);
+            transition: max-height 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), border-radius 0.4s ease-in-out,
+                        box-shadow 0.4s ease, background 0.4s ease;
+            width: fit-content; padding: 0;
+        }
+        #page-emprestimos .total-counter-container:hover {
+            max-height: 500px; border-radius: 20px; 
+            background: linear-gradient(145deg, rgba(124, 58, 237, 0.4), rgba(99, 102, 241, 0.35));
+            box-shadow: 0 10px 35px rgba(124, 58, 237, 0.5), inset 0 0 15px rgba(167, 139, 250, 0.15);
+        }
+        #page-emprestimos .counter-main { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0.7rem 1.5rem; flex-shrink: 0; line-height: 1.1em; }
+        #page-emprestimos .counter-main span:first-child { font-weight: 500; font-size: 0.9em; color: #C4B5FD; } 
+        #page-emprestimos #valorCirculacaoPrincipal { font-family: 'Orbitron', sans-serif; font-size: 1.2em; font-weight: 700; color: #fff; text-shadow: 0 0 8px rgba(192, 132, 252, 0.7); }
+        #page-emprestimos .counter-details {
+            width: 100%; padding: 1rem 1.5rem 0.8rem 1.5rem; margin-top: 0.6rem;
+            border-top: 1px solid rgba(167, 139, 250, 0.3);
+            opacity: 0; transform: translateY(-8px) scaleY(0.98);
+            transform-origin: top center;
+            transition: opacity 0.4s ease-out 0.1s, transform 0.4s ease-out 0.1s;
+            pointer-events: none;
+        }
+        #page-emprestimos .total-counter-container:hover .counter-details { opacity: 1; transform: translateY(0) scaleY(1); pointer-events: auto; }
+        #page-emprestimos .counter-details p { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.7rem; font-size: 0.85em; }
+        #page-emprestimos .counter-details p:last-child { margin-bottom: 0; }
+        #page-emprestimos .counter-details span:first-child { color: #D1D5DB; margin-right: 10px; flex-shrink: 0; }
+        #page-emprestimos .counter-details span:last-child { font-weight: 600; text-align: right; word-break: break-all; }
+        #page-emprestimos #totalGirando { color: #A78BFA; }
+        #page-emprestimos #valorLucroReceber { color: var(--cosmos-warning); }
+        #page-emprestimos #valorMediaPorcentagem { color: var(--cosmos-blue-accent); }
+        #page-emprestimos #valorLucroRealizado { color: var(--cosmos-positive); }
+
+        #page-emprestimos main { flex: 1; padding: 0; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; animation: fadeInEmprestimos 1s ease-out; position: relative; z-index: 1; }
+        @keyframes fadeInEmprestimos { from { opacity: 0; } to { opacity: 1; } }
+        #page-emprestimos .client-data, #page-emprestimos .client-summary, #page-emprestimos .financial-analysis, #page-emprestimos .cash-flow-analysis {
+            background-color: rgba(29, 29, 40, 0.75); 
+            backdrop-filter: blur(12px) saturate(120%);
+            border: 1px solid transparent;
+            border-image: linear-gradient(145deg, rgba(107, 33, 168, 0.4), rgba(79, 70, 229, 0.3), rgba(59, 130, 246, 0.4)) 1; 
+            padding: 2rem 2.5rem; border-radius: 1rem; 
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(167, 139, 250, 0.05);
+            width: 100%; max-width: 1300px; 
+            margin: 0 auto 2.5rem auto;
+            transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), border-image 0.35s ease-out;
+            will-change: opacity, transform, box-shadow;
+        }
+        #page-emprestimos .client-summary, #page-emprestimos .financial-analysis, #page-emprestimos .cash-flow-analysis {
+            opacity: 0; transform: translateY(35px) scale(0.98);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out,
+                        box-shadow 0.35s ease, border-image 0.35s ease;
+        }
+        #page-emprestimos .client-data { animation: popInSmoothEmprestimos 0.7s ease-out 0.1s backwards; }
+        @keyframes popInSmoothEmprestimos { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        #page-emprestimos .client-summary.visible, #page-emprestimos .financial-analysis.visible, #page-emprestimos .cash-flow-analysis.visible { opacity: 1; transform: translateY(0) scale(1); }
+        #page-emprestimos .client-data:hover, #page-emprestimos .client-summary:hover, #page-emprestimos .financial-analysis:hover, #page-emprestimos .cash-flow-analysis:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 15px 45px rgba(0,0,0, 0.5), 0 0 25px rgba(124, 58, 237, 0.2);
+            border-image: linear-gradient(145deg, rgba(167, 139, 250, 0.7), rgba(124, 58, 237, 0.6), rgba(96, 165, 250, 0.6)) 1;
+        }
+        #page-emprestimos .client-data h2, #page-emprestimos .client-summary h2, #page-emprestimos .financial-analysis h2, #page-emprestimos .cash-flow-analysis h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff; margin-bottom: 1.8rem; text-align: center; font-weight: 600; font-size: 2em; 
+            position: relative; display: inline-block; left: 50%; transform: translateX(-50%); 
+            padding-bottom: 0.5rem;
+        }
+        #page-emprestimos .client-data h2::after, #page-emprestimos .client-summary h2::after, #page-emprestimos .financial-analysis h2::after, #page-emprestimos .cash-flow-analysis h2::after {
+            content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            width: 60%; height: 3px;
+            background: linear-gradient(90deg, transparent, #A78BFA, #EC4899, transparent); 
+            border-radius: 3px; opacity: 0.7;
+            transition: opacity 0.4s ease-in-out, width 0.4s ease-in-out;
+        }
+        #page-emprestimos .client-data:hover h2::after, #page-emprestimos .client-summary:hover h2::after, #page-emprestimos .financial-analysis:hover h2::after, #page-emprestimos .cash-flow-analysis:hover h2::after {
+            width: 80%; opacity: 0.9;
+        }
+        #page-emprestimos .client-data p { text-align: center; margin-bottom: 2rem; font-size: 1em; color: #D1D5DB; }
+        #page-emprestimos table {
+            width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 2.5rem;
+            background-color: rgba(20, 20, 30, 0.7); 
+            border-radius: 12px; overflow: hidden; 
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+            table-layout: fixed; word-wrap: break-word;
+            border: 1px solid rgba(124, 58, 237, 0.2); 
+        }
+        #page-emprestimos th {
+            background-color: rgba(40, 40, 55, 0.85); 
+            color: #C4B5FD; 
+            font-weight: 600; padding: 0.9rem 1rem;
+            border-bottom: 2px solid rgba(167, 139, 250, 0.4); 
+            white-space: normal; font-size: 0.9em; vertical-align: middle;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        #page-emprestimos td {
+            padding: 0.8rem 1rem; border-bottom: 1px solid rgba(124, 58, 237, 0.15); 
+            vertical-align: middle; transition: background-color 0.3s ease, color 0.3s ease;
+            white-space: normal; font-size: 0.85em; color: #D1D5DB; 
+        }
+        #page-emprestimos col:nth-child(1) { width: 15%; } #page-emprestimos col:nth-child(2) { width: 18%; } #page-emprestimos col:nth-child(3) { width: 13%; } #page-emprestimos col:nth-child(4) { width: 10%; } #page-emprestimos col:nth-child(5) { width: 8%; } #page-emprestimos col:nth-child(6) { width: 10%; } #page-emprestimos col:nth-child(7) { width: 10%; } #page-emprestimos col:nth-child(8) { width: 13%; } #page-emprestimos col:nth-child(9) { width: 5%; } #page-emprestimos col:nth-child(10) { width: 8%; }
+        #page-emprestimos td:nth-child(1) { font-size: 0.7em; word-break: break-all; opacity: 0.65; color: #A0AEC0; }
+        #page-emprestimos td:nth-child(3), #page-emprestimos td:nth-child(4), #page-emprestimos td:nth-child(8) { text-align: right; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        #page-emprestimos td:nth-child(5), #page-emprestimos td:nth-child(6), #page-emprestimos td:nth-child(7), #page-emprestimos td:nth-child(9), #page-emprestimos td:nth-child(10) { text-align: center; }
+        #page-emprestimos tbody tr { transition: background-color 0.25s ease, transform 0.25s ease-out; }
+        #page-emprestimos tbody tr:nth-child(even) { background-color: rgba(40, 40, 55, 0.4); } 
+        #page-emprestimos tbody tr:hover {
+            background-color: rgba(87, 83, 182, 0.4); 
+            transform: translateY(-2px); box-shadow: 0 5px 12px rgba(124, 58, 237, 0.25);
+            position: relative; z-index: 5;
+        }
+        #page-emprestimos tbody tr:hover td { color: #fff; } #page-emprestimos tbody tr:last-child td { border-bottom: none; }
+        #page-emprestimos tbody tr.row-entering { opacity: 0; transform: translateY(15px) scale(0.98); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+        #page-emprestimos tbody tr.row-entering.visible { opacity: 1; transform: translateY(0) scale(1); }
+        #page-emprestimos tbody tr.row-exiting { opacity: 1; transform: translateX(0) scale(1); transition: opacity 0.4s ease-in, transform 0.4s ease-in; }
+        #page-emprestimos tbody tr.row-exiting.hidden { opacity: 0; transform: translateX(-30px) scale(0.95); }
+        #page-emprestimos td.percentage-cell { font-style: italic; color: #A78BFA; opacity: 0.9; }
+        #page-emprestimos tbody tr:hover td.percentage-cell { color: #DDD6FE; opacity: 1; }
+        #page-emprestimos td input[type="text"], #page-emprestimos td input[type="number"], #page-emprestimos td input[type="date"] {
+            width: 100%; padding: 0.5rem 0.7rem;
+            border: 1px solid rgba(124, 58, 237, 0.35); 
+            border-radius: 6px; font-family: inherit; font-size: 0.95em;
+            background-color: rgba(13, 17, 23, 0.8); 
+            color: #E0E0E0; transition: all 0.25s ease-in-out;
+        }
+        #page-emprestimos td input[type="number"] { text-align: right; } #page-emprestimos td input[type="date"] { text-align: center; }
+        #page-emprestimos td input:focus {
+            outline: none; background-color: #0D1117;
+            border-color: #A78BFA; box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.4); 
+        }
+        #page-emprestimos td.editing { background-color: rgba(87, 83, 182, 0.2) !important; padding: 0.15rem; }
+        #page-emprestimos td.editing input { padding: 0.6rem 0.7rem; }
+        #page-emprestimos td input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none;
+            width: 40px; height: 20px; background-color: rgba(107, 114, 128, 0.5); 
+            border-radius: 10px; cursor: pointer; vertical-align: middle;
+            position: relative; transition: background-color 0.3s ease;
+            border: 1px solid rgba(167, 139, 250, 0.3);
+        }
+        #page-emprestimos td input[type="checkbox"]::before { 
+            content: ''; position: absolute;
+            width: 14px; height: 14px; background-color: #E0E0E0;
+            border-radius: 50%; top: 2px; left: 3px;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        #page-emprestimos td input[type="checkbox"]:hover { filter: brightness(1.1); }
+        #page-emprestimos td input[type="checkbox"]:checked {
+            background-image: linear-gradient(135deg, var(--index-button-primary-gradient-start) 0%, var(--index-button-primary-gradient-end) 100%); 
+            border-color: transparent;
+            box-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
+        }
+        #page-emprestimos td input[type="checkbox"]:checked::before {
+            transform: translateX(20px); 
+            background-color: #fff;
+        }
+        #page-emprestimos .action-button, #page-emprestimos .delete-button, #page-emprestimos .modal-button {
+            border: none; padding: 0.8rem 1.8rem; border-radius: 0.5rem; 
+            cursor: pointer; font-weight: 600; font-size: 0.9em;
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative; overflow: hidden;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.15); transform-origin: center; will-change: transform, box-shadow;
+        }
+        #page-emprestimos .action-button, #page-emprestimos .modal-button-confirm {
+            color: white;
+            background-image: linear-gradient(135deg, var(--index-button-primary-gradient-start) 0%, var(--index-button-primary-gradient-end) 100%);
+            box-shadow: 0 4px 15px rgba(107, 33, 168, 0.3), 0 1px 3px rgba(0,0,0,0.2);
+            display: block; width: fit-content; margin: 2rem auto 0 auto;
+        }
+        #page-emprestimos .action-button::before, #page-emprestimos .modal-button-confirm::before { 
+            content: ""; position: absolute; top: 50%; left: 50%; width: 300%; height: 300%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 60%);
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.4s ease-out, opacity 0.4s ease-out; opacity: 0; border-radius: 50%;
+        }
+        #page-emprestimos .action-button:hover, #page-emprestimos .modal-button-confirm:hover {
+            background-image: linear-gradient(135deg, var(--index-button-primary-hover-gradient-start) 0%, var(--index-button-primary-hover-gradient-end) 100%);
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(107, 33, 168, 0.4), 0 3px 8px rgba(0,0,0,0.25);
+        }
+        #page-emprestimos .action-button:hover::before, #page-emprestimos .modal-button-confirm:hover::before {
+            transform: translate(-50%, -50%) scale(1); opacity: 1;
+        }
+        #page-emprestimos .action-button:active, #page-emprestimos .modal-button-confirm:active {
+            transform: translateY(-1px) scale(0.97); box-shadow: 0 2px 8px rgba(107, 33, 168, 0.3);
+        }
+        #page-emprestimos .delete-button, #page-emprestimos .modal-button-cancel {
+            border: 2px solid #A78BFA; 
+            color: #C4B5FD; background-color: transparent;
+            padding: 0.35rem 0.7rem; font-size: 0.8em; border-radius: 0.375rem;
+            display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+        }
+        #page-emprestimos .delete-button:hover, #page-emprestimos .modal-button-cancel:hover {
+            background-color: rgba(167, 139, 250, 0.15); color: #DDD6FE; border-color: #C4B5FD;
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
+        }
+        #page-emprestimos .delete-button:active, #page-emprestimos .modal-button-cancel:active {
+            transform: translateY(0px) scale(0.98); background-color: rgba(167, 139, 250, 0.25);
+        }
+        #page-emprestimos .modal-button { padding: 0.7rem 1.5rem; font-size: 0.9em; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25); }
+        #page-emprestimos .action-button span, #page-emprestimos .delete-button span, #page-emprestimos .modal-button span { position: relative; z-index: 1; }
+        #page-emprestimos .summary-content-wrapper { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-start; }
+        #page-emprestimos .client-summary-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.5rem; flex: 2 1 480px; min-width: 280px; }
+        #page-emprestimos .summary-placeholder { grid-column: 1 / -1; text-align: center; color: #A0AEC0; font-style: italic; padding: 2.5rem 0; font-size: 1em; }
+
+        #page-emprestimos .client-summary-item { 
+            background: linear-gradient(145deg, rgba(40, 40, 60, 0.85), rgba(25, 25, 40, 0.9)); 
+            padding: 1.2rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            opacity: 0; 
+            transform: scale(0.95) rotate(-2deg);
+            will-change: opacity, transform, box-shadow;
+            perspective: 1500px; 
+            transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                        box-shadow 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                        opacity 0.5s ease-out; 
+        }
+        #page-emprestimos .client-summary.visible .client-summary-item { opacity: 1; transform: scale(1) rotate(0deg); }
+        #page-emprestimos .client-summary.visible .client-summary-item:nth-child(1) { transition-delay: 0.1s; } 
+        #page-emprestimos .client-summary.visible .client-summary-item:nth-child(2) { transition-delay: 0.15s; } 
+        #page-emprestimos .client-summary.visible .client-summary-item:nth-child(3) { transition-delay: 0.2s; } 
+        #page-emprestimos .client-summary.visible .client-summary-item:nth-child(4) { transition-delay: 0.25s; } 
+        #page-emprestimos .client-summary.visible .client-summary-item:nth-child(5) { transition-delay: 0.3s; }
+        #page-emprestimos .client-summary-item:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.4), 0 0 15px var(--cosmos-cyan-glow);
+        }
+        #page-emprestimos .client-summary-item .client-name { 
+            font-size: 1.05em; font-weight: 600; color: #DDD6FE; 
+            margin-bottom: 0.5rem; word-break: break-all; 
+        }
+        #page-emprestimos .summary-card-flipper {
+            position: relative; width: 100%; flex-grow: 1; 
+            margin-top: auto; transition: transform 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            transform-style: preserve-3d;
+        }
+        #page-emprestimos .client-summary-item:hover .summary-card-flipper { transform: rotateY(180deg); }
+        #page-emprestimos .summary-card-front,
+        #page-emprestimos .summary-card-back {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 0.75rem;
+        }
+        #page-emprestimos .summary-card-front { padding: 0 1.2rem; justify-content: flex-end; }
+        #page-emprestimos .summary-card-back {
+            transform: rotateY(180deg); 
+            background: linear-gradient(155deg, rgba(30, 30, 50, 0.98), rgba(20, 20, 35, 0.95));
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            padding: 1rem 1.2rem; flex-direction: column; align-items: stretch; gap: 0.8rem;
+            box-shadow: inset 0 0 20px rgba(13, 17, 23, 0.8);
+        }
+        #page-emprestimos .client-total-due {
+            font-family: 'Orbitron', sans-serif; font-size: 1.25em; font-weight: 700; color: #6EE7B7; 
+            text-shadow: 0 0 6px rgba(74, 222, 128, 0.4); text-align: right;
+        }
+        #page-emprestimos .summary-card-back .detail-item {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.9em; padding: 0.5rem 0.8rem; border-radius: 0.375rem;
+            background: rgba(13, 17, 23, 0.5); border-left: 3px solid transparent;
+        }
+        #page-emprestimos .summary-card-back .detail-item.principal-item { border-left-color: var(--cosmos-blue-accent); }
+        #page-emprestimos .summary-card-back .detail-item.juros-item { border-left-color: var(--cosmos-warning); }
+        #page-emprestimos .summary-card-back .detail-item.taxa-item { border-left-color: var(--cosmos-cyan-accent); }
+        #page-emprestimos .summary-card-back .detail-label {
+            color: var(--cosmos-text-secondary); font-weight: 400;
+            display: flex; align-items: center; gap: 8px;
+        }
+        #page-emprestimos .summary-card-back .detail-icon { font-size: 1.2em; opacity: 0.8; }
+        #page-emprestimos .summary-card-back .detail-value {
+            font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 1.1em;
+        }
+        #page-emprestimos .summary-card-back .detail-value.principal { color: var(--cosmos-blue-accent); text-shadow: 0 0 5px var(--cosmos-blue-accent); }
+        #page-emprestimos .summary-card-back .detail-value.juros { color: var(--cosmos-warning); text-shadow: 0 0 5px var(--cosmos-warning); }
+        #page-emprestimos .summary-card-back .detail-value.percent { color: var(--cosmos-cyan-accent); text-shadow: 0 0 5px var(--cosmos-cyan-accent); }
+        
+        #page-emprestimos .client-chart-container { 
+            flex: 1 1 360px; min-width: 300px; padding: 1.2rem;
+            background-color: rgba(25, 25, 40, 0.7); border-radius: 0.75rem;
+            border: 1px solid rgba(167, 139, 250, 0.15);
+            display: flex; justify-content: center; align-items: center; position: relative; min-height: 300px;
+            opacity: 0; transform: scale(0.95) rotate(2deg);
+            transition: opacity 0.6s ease-out 0.2s, transform 0.6s ease-out 0.2s;
+            will-change: opacity, transform;
+        }
+        #page-emprestimos .client-summary.visible .client-chart-container { opacity: 1; transform: scale(1) rotate(0deg); }
+        #page-emprestimos #clientDebtChart { max-width: 100%; max-height: 380px; }
+        #page-emprestimos .chart-placeholder { color: #A0AEC0; font-style: italic; text-align: center; font-size: 1em; }
+        #page-emprestimos .investment-limit-container { 
+            background-color: rgba(20, 20, 30, 0.65); padding: 1.2rem 1.8rem;
+            border-radius: 0.75rem; margin-bottom: 2rem;
+            border: 1px solid rgba(124, 58, 237, 0.2);
+        }
+        #page-emprestimos .investment-limit-container h3 { text-align: center; color: #DDD6FE; font-family: 'Orbitron', sans-serif; font-weight: 500; font-size: 1.15em; margin-bottom: 1.2rem; }
+        #page-emprestimos .limit-details { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem; font-size: 0.9em; color: #D1D5DB; }
+        #page-emprestimos .limit-details span strong { color: #E0E0E0; font-weight: 600; margin-left: 4px; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        #page-emprestimos .limit-details span strong.available { color: #6EE7B7; text-shadow: 0 0 4px #6EE7B7; }
+        #page-emprestimos .limit-details span strong.warning { color: var(--cosmos-warning); text-shadow: 0 0 4px var(--cosmos-warning); }
+        #page-emprestimos .limit-details span strong.danger { color: var(--cosmos-negative); text-shadow: 0 0 4px var(--cosmos-negative); }
+        #page-emprestimos .progress-bar-bg { 
+            width: 100%; height: 16px; background-color: rgba(13, 17, 23, 0.9);
+            border-radius: 50px; overflow: hidden;
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.4); margin-bottom: 0.5rem;
+        }
+        #page-emprestimos .progress-bar-fill {
+            height: 100%;
+            background-image: linear-gradient(135deg, var(--index-button-primary-gradient-start) 0%, var(--index-button-primary-gradient-end) 50%, var(--cosmos-purple-primary) 100%); 
+            background-size: 250% 100%; border-radius: 50px;
+            transition: width 0.7s ease-out;
+            box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
+            animation: progressShineEmprestimos 3.5s linear infinite;
+        }
+        @keyframes progressShineEmprestimos { to { background-position: 250% 100%; } }
+        #page-emprestimos .progress-percentage { text-align: right; font-size: 0.8em; color: #C4B5FD; font-weight: 500; }
+        #page-emprestimos .additional-charts-container { display: flex; flex-wrap: wrap; gap: 1.8rem; justify-content: center; }
+        #page-emprestimos .chart-box { 
+            background: linear-gradient(145deg, rgba(40, 40, 60, 0.85), rgba(25, 25, 40, 0.9));
+            padding: 1.2rem; border-radius: 0.75rem;
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            flex: 1 1 380px; min-width: 280px; display: flex; flex-direction: column;
+            opacity: 0; transform: scale(0.95) rotate(-1.5deg);
+            transition: opacity 0.5s ease-out 0.2s, transform 0.5s ease-out 0.2s, box-shadow 0.3s ease, background 0.3s ease;
+            will-change: opacity, transform, box-shadow;
+        }
+        #page-emprestimos .financial-analysis.visible .chart-box { opacity: 1; transform: scale(1) rotate(0deg); }
+        #page-emprestimos .financial-analysis.visible .chart-box:nth-child(1) { transition-delay: 0.3s; }
+        #page-emprestimos .financial-analysis.visible .chart-box:nth-child(2) { transition-delay: 0.4s; }
+        #page-emprestimos .chart-box:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
+            background: linear-gradient(145deg, rgba(50, 50, 70, 0.9), rgba(35, 35, 50, 0.95));
+        }
+        #page-emprestimos .chart-box h4 { text-align: center; color: #DDD6FE; font-family: 'Orbitron', sans-serif; font-weight: 500; margin-bottom: 1.2rem; font-size: 1.1em; }
+        #page-emprestimos .chart-wrapper { position: relative; width: 100%; flex-grow: 1; min-height: 240px; display: flex; justify-content: center; align-items: center; }
+        #page-emprestimos .chart-wrapper canvas { max-width: 100%; max-height: 340px; }
+        #page-emprestimos .cash-flow-analysis .chart-box { 
+            flex-basis: 100%;
+            opacity: 0; transform: scale(0.98) translateY(25px);
+            transition: opacity 0.7s ease-out 0.3s, transform 0.7s ease-out 0.3s;
+            will-change: opacity, transform;
+        }
+        #page-emprestimos .cash-flow-analysis.visible .chart-box { opacity: 1; transform: scale(1) translateY(0); }
+        #page-emprestimos .cash-flow-analysis .chart-wrapper { min-height: 310px; }
+        #page-emprestimos #cashFlowChart { max-width: 100%; max-height: 460px; }
+        #page-emprestimos .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 17, 23, 0.8); 
+            backdrop-filter: blur(6px) saturate(110%);
+            display: flex; justify-content: center; align-items: center; z-index: 1050;
+            opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+        }
+        #page-emprestimos .modal-overlay.active { opacity: 1; visibility: visible; transition: opacity 0.35s ease, visibility 0s linear 0s; }
+        #page-emprestimos .modal-container { 
+            background: linear-gradient(145deg, rgba(40, 40, 60, 0.98), rgba(25, 25, 40, 0.98));
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            padding: 2rem 2.5rem; border-radius: 0.75rem;
+            box-shadow: 0 8px 35px rgba(0, 0, 0, 0.5);
+            text-align: center; color: #E0E0E0; max-width: 440px; width: 90%;
+            transform: scale(0.85) rotate(-3deg); opacity: 0;
+            transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+            will-change: transform, opacity;
+        }
+        #page-emprestimos .modal-overlay.active .modal-container { opacity: 1; animation: popInModalSmoothEmprestimos 0.55s ease-out forwards; }
+        @keyframes popInModalSmoothEmprestimos {
+            0% { transform: scale(0.85) rotate(-3deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        #page-emprestimos .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em; font-weight: 600; margin-bottom: 0.8rem;
+            color: var(--cosmos-negative); 
+            text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+        }
+        #page-emprestimos .modal-message { font-size: 0.95em; margin-bottom: 1.8rem; line-height: 1.65; color: #D1D5DB; }
+        #page-emprestimos .modal-message strong { color: #FCA5A5; font-weight: 600; }
+        #page-emprestimos .modal-actions { display: flex; justify-content: center; gap: 1rem; }
+        @media (max-width: 768px) { #page-emprestimos .total-counter-wrapper { position: relative; margin: 1.2rem auto 0 auto;} }
+    </style>
+</head>
+<body>
+    <div id="starry-sky-backdrop"></div>
+    <div id="loadingOverlay" class="loading-spinner-overlay"><div class="spinner"></div></div>
+    <div id="notification-container"></div>
+
+    <nav id="main-nav">
+        <!-- UPDATED: Set "active" class on the current page's link -->
+        <a href="index.html">Patrimônio Estelar</a>
+        <a href="emprestimos.html" class="active">Empréstimos CosmoFin</a>
+        <a href="gastos.html">Gastos Cósmicos</a>
+    </nav>
+
+    <main id="page-content-area">
+        <!-- Page: Empréstimos (This is the only page content in this file) -->
+        <div id="page-emprestimos" class="page-view">
+             <div class="total-counter-wrapper">
+                <div class="total-counter-container">
+                    <div class="counter-main">
+                        <span>Em Circulação:</span>
+                        <span id="valorCirculacaoPrincipal">R$ 0,00</span>
+                    </div>
+                    <div class="counter-details">
+                        <p><span>Total Girando:</span> <span id="totalGirando">R$ 0,00</span></p>
+                        <p><span>Lucro a Receber:</span> <span id="valorLucroReceber">R$ 0,00</span></p>
+                        <p><span>Média Juros(%):</span> <span id="valorMediaPorcentagem">0.00%</span></p>
+                        <p><span>Lucro Realizado:</span> <span id="valorLucroRealizado">R$ 0,00</span></p>
+                    </div>
+                </div>
+           </div>
+            <main> 
+                <section class="client-data">
+                    <h2>Painel de emprestimos</h2>
+                    <p>Gerencie seus emprestimos com precisão. Clique duas vezes para editar.</p>
+                    <table>
+                        <colgroup> <col> <col> <col> <col> <col> <col> <col> <col> <col> <col> </colgroup>
+                        <thead>
+                            <tr>
+                                <th>ID</th> <th>cliente</th> <th>Valor Base</th> <th>juros (R$)</th>
+                                <th>Taxa (%)</th> <th>Data</th> <th>validade</th> <th>total</th>
+                                <th>Coletado?</th> <th>Comandos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientTableBody">
+                            <!-- Rows will be dynamically inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                    <button id="addClientBtn" class="action-button"><span>Novo emprestimo</span></button>
+                </section>
+                <section id="clientSummarySection" class="client-summary">
+                     <h2>Relatório de Clientes (Valores Pendentes)</h2>
+                    <div class="summary-content-wrapper">
+                        <div id="clientSummaryList" class="client-summary-list">
+                            <p class="summary-placeholder">Analisando constelações de dados...</p>
+                        </div>
+                        <div id="clientChartContainer" class="client-chart-container">
+                            <canvas id="clientDebtChart"></canvas>
+                            <p id="chartPlaceholder" class="chart-placeholder">Visualizando órbitas financeiras...</p>
+                        </div>
+                    </div>
+                </section>
+                <section id="financialAnalysisSection" class="financial-analysis">
+                    <h2>Análise Financeira Geral</h2>
+                    <div id="investmentLimitContainer" class="investment-limit-container">
+                        <h3>Limite de Investimento</h3>
+                        <div class="limit-details">
+                            <span>Em Circulação: <strong id="circulacaoValor">R$ 0,00</strong></span>
+                            <span>Limite Atual: <strong id="limiteValor">R$ 3.000,00</strong></span>
+                            <span>Disponível:<strong id="disponivelValor" class="available">R$ 3.000,00</strong></span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-percentage" id="progressBarPercentage">0% Utilizado</div>
+                    </div>
+                    <div id="additionalChartsContainer" class="additional-charts-container">
+                        <div class="chart-box">
+                            <h4>Principal vs. Juros (Total Geral)</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="profitMarginChart"></canvas>
+                                <p id="profitMarginPlaceholder" class="chart-placeholder">Contando estrelas...</p>
+                            </div>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Status dos Empréstimos (Contagem)</h4>
+                             <div class="chart-wrapper">
+                                <canvas id="loanStatusChart"></canvas>
+                                <p id="loanStatusPlaceholder" class="chart-placeholder">Verificando logs...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                 <section id="cashFlowSection" class="cash-flow-analysis">
+                    <h2>Histórico de Capital (Fluxo de Caixa)</h2>
+                    <div class="chart-box">
+                        <h4>Evolução do Capital Disponível</h4>
+                         <div class="chart-wrapper">
+                            <canvas id="cashFlowChart"></canvas>
+                            <p id="cashFlowPlaceholder" class="chart-placeholder">Calculando trajetória temporal...</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            <div id="confirmDeleteOverlay" class="modal-overlay">
+                 <div id="confirmDeleteModal" class="modal-container">
+                    <h3 class="modal-title">🚨 Alerta de Buraco Negro! 🚨</h3>
+                    <p class="modal-message">Tem certeza que deseja ejetar esta missão de crédito para o esquecimento? <br><strong>Esta ação é irreversível e alterará o continuum espaço-tempo financeiro!</strong></p>
+                    <div class="modal-actions">
+                        <button id="confirmDeleteBtn" class="modal-button modal-button-confirm">Sim, Ejetar!</button>
+                        <button id="cancelDeleteBtn" class="modal-button modal-button-cancel">Cancelar Manobra</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        // --- Firebase Configurations and Initializations ---
+        const firebaseConfigPatrimonio = {
+            apiKey: "AIzaSyBguBmDJQmJ3RCoDrRjNwefZ1pwCPFzAnc",
+            authDomain: "patrimonio-338c2.firebaseapp.com",
+            databaseURL: "https://patrimonio-338c2-default-rtdb.firebaseio.com",
+            projectId: "patrimonio-338c2",
+            storageBucket: "patrimonio-338c2.firebasestorage.app",
+            messagingSenderId: "552492772905",
+            appId: "1:552492772905:web:7352ab0f441f8046a47638",
+            measurementId: "G-EMYN0EQYD8"
+        };
+      
+        const firebaseConfigpharcal = {
+            apiKey: "AIzaSyB7r3TFVcQ29_oRFgoYAQdT2m2NhQ5lGIQ",
+            authDomain: "parchal.firebaseapp.com",
+            databaseURL: "https://parchal-default-rtdb.firebaseio.com",
+            projectId: "parchal",
+            storageBucket: "parchal.firebasestorage.app",
+            messagingSenderId: "374306635569",
+            appId: "1:374306635569:web:f65d9633939e3b45e63a10",
+            measurementId: "G-5ZT3VC8ZD0"
+        };
+
+        const firebaseConfigGastos = {
+            apiKey: "AIzaSyBVrRGEqr8t8dD8ikEcguuyu1rb9yPHB3o",
+            authDomain: "controle-de-gastos-c41d6.firebaseapp.com",
+            databaseURL: "https://controle-de-gastos-c41d6-default-rtdb.firebaseio.com",
+            projectId: "controle-de-gastos-c41d6",
+            storageBucket: "controle-de-gastos-c41d6.firebasestorage.app",
+            messagingSenderId: "470879933809",
+            appId: "1:470879933809:web:6fc9642396cdcf4b46d2d0",
+            measurementId: "G-4W5D5KL09M"
+        };
+        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, get, set, update, push, remove, onValue, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        // Initialize only the Firebase App needed for this page
+        const appEmprestimos = initializeApp(firebaseConfigpharcal, 'emprestimosApp');
+        const databaseEmprestimos = getDatabase(appEmprestimos);
+        
+        window.firebaseDbFunctions = { ref, get, set, update, push, remove, onValue, child };
+
+        const loadingOverlayGlobalEl = document.getElementById('loadingOverlay');
+        function showGlobalLoading() { if(loadingOverlayGlobalEl) loadingOverlayGlobalEl.classList.add('visible'); }
+        function hideGlobalLoading() { if(loadingOverlayGlobalEl) loadingOverlayGlobalEl.classList.remove('visible'); }
+
+        function showGlobalNotification(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            const notification = document.createElement('div');
+            notification.classList.add('notification-popup', type);
+            const iconSpan = document.createElement('span');
+            iconSpan.classList.add('icon');
+            let iconChar = '';
+            switch (type) {
+                case 'success': iconChar = '✔️'; break;
+                case 'error':   iconChar = '❌'; break;
+                case 'warning': iconChar = '⚠️'; break;
+                case 'info':    iconChar = 'ℹ️'; break;
+            }
+            iconSpan.textContent = iconChar;
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = message;
+            notification.appendChild(iconSpan);
+            notification.appendChild(messageSpan);
+            container.prepend(notification);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => { notification.classList.add('show'); });
+            });
+            const timerId = setTimeout(() => dismissNotification(), duration);
+            const dismissNotification = () => {
+                notification.classList.remove('show');
+                notification.addEventListener('transitionend', () => notification.remove(), { once: true });
+                setTimeout(() => { if (notification.parentElement) notification.remove(); }, 500); // Fallback
+            };
+            notification.addEventListener('click', () => {
+                clearTimeout(timerId);
+                dismissNotification();
+            });
+        }
+        window.showNotification = showGlobalNotification; 
+
+        // --- Empréstimos Page Script ---
+        function initEmprestimosPage() {
+            const database = databaseEmprestimos;
+            const { ref, get, set, update, push, remove, child, onValue } = window.firebaseDbFunctions;
+            const emprestimosView = document.getElementById('page-emprestimos');
+            const emprestimosRef = ref(database, 'emprestimos');
+            const tableBody = emprestimosView.querySelector('#clientTableBody');
+            const valorCirculacaoPrincipalEl = emprestimosView.querySelector('#valorCirculacaoPrincipal');
+            const totalGirandoEl = emprestimosView.querySelector('#totalGirando');
+            const valorLucroReceberEl = emprestimosView.querySelector('#valorLucroReceber');
+            const valorMediaPorcentagemEl = emprestimosView.querySelector('#valorMediaPorcentagem');
+            const valorLucroRealizadoEl = emprestimosView.querySelector('#valorLucroRealizado');
+            const addClientBtn = emprestimosView.querySelector('#addClientBtn');
+            const confirmDeleteOverlay = emprestimosView.querySelector('#confirmDeleteOverlay');
+            const confirmDeleteModal = emprestimosView.querySelector('#confirmDeleteModal');
+            const confirmDeleteBtn = emprestimosView.querySelector('#confirmDeleteBtn');
+            const cancelDeleteBtn = emprestimosView.querySelector('#cancelDeleteBtn');
+            const modalMessage = confirmDeleteModal?.querySelector('.modal-message');
+            const clientSummarySection = emprestimosView.querySelector('#clientSummarySection');
+            const clientSummaryList = emprestimosView.querySelector('#clientSummaryList');
+            const clientChartContainer = emprestimosView.querySelector('#clientChartContainer');
+            const clientDebtChartCanvas = emprestimosView.querySelector('#clientDebtChart');
+            const chartPlaceholder = emprestimosView.querySelector('#chartPlaceholder');
+            const financialAnalysisSection = emprestimosView.querySelector('#financialAnalysisSection');
+            const circulacaoValorEl = emprestimosView.querySelector('#circulacaoValor');
+            const limiteValorEl = emprestimosView.querySelector('#limiteValor');
+            const disponivelValorEl = emprestimosView.querySelector('#disponivelValor');
+            const progressBarFillEl = emprestimosView.querySelector('#progressBarFill');
+            const progressBarPercentageEl = emprestimosView.querySelector('#progressBarPercentage');
+            const profitMarginChartCanvas = emprestimosView.querySelector('#profitMarginChart');
+            const profitMarginPlaceholder = emprestimosView.querySelector('#profitMarginPlaceholder');
+            const loanStatusChartCanvas = emprestimosView.querySelector('#loanStatusChart');
+            const loanStatusPlaceholder = emprestimosView.querySelector('#loanStatusPlaceholder');
+            const cashFlowSection = emprestimosView.querySelector('#cashFlowSection');
+            const cashFlowChartCanvas = emprestimosView.querySelector('#cashFlowChart');
+            const cashFlowPlaceholder = emprestimosView.querySelector('#cashFlowPlaceholder');
+            let clientData = [];
+            let loanIdToDelete = null;
+            let clientChartInstance = null, profitMarginChartInstance = null, loanStatusChartInstance = null, cashFlowChartInstance = null;
+            const INITIAL_INVESTMENT_LIMIT = 3000;
+            let initializedFlags = {};
+
+            const formatCurrency = (value) => { try { return isNaN(value) ? 'R$ 0,00' : value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } catch { return 'R$ 0,00'; }};
+            const formatPercentage = (value) => { try { return (isNaN(value) || !isFinite(value)) ? '0.00%' : value.toFixed(2) + '%'; } catch { return '0.00%'; }};
+            const calculatePercentageInterest = (valorEmprestimo, jurosDinheiro) => { const val = parseFloat(valorEmprestimo); const juros = parseFloat(jurosDinheiro); if (!val || val <= 0 || isNaN(val) || isNaN(juros)) return 0; return (juros / val) * 100; };
+            const calculateTotalValue = (emprestimo) => { const valor = parseFloat(emprestimo?.valorEmprestimo) || 0; const juros = parseFloat(emprestimo?.jurosDinheiro) || 0; return valor + juros; };
+            function addOneMonth(dateString) { if (!dateString || isNaN(new Date(dateString).getTime())) { return dateString || ''; } try { const date = new Date(dateString + 'T00:00:00'); date.setMonth(date.getMonth() + 1); const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; } catch (error) { console.error("Erro addOneMonth (Empréstimos):", error); return dateString; } }
+            function generateChartColors(count) { 
+                const base = ['rgba(167, 139, 250, 0.8)','rgba(96, 165, 250, 0.8)','rgba(52, 211, 153, 0.8)', 'rgba(251, 191, 36, 0.8)','rgba(248, 113, 113, 0.8)','rgba(236, 72, 153, 0.8)','rgba(192, 132, 252, 0.75)','rgba(129, 140, 248, 0.75)'];
+                const c = []; for (let i = 0; i < count; i++) c.push(base[i % base.length]); return c;
+            }
+            function sortClientDataByDate() { clientData.sort((a, b) => { const dateA = a?.dataEmprestimo ? new Date(a.dataEmprestimo + 'T00:00:00') : null; const dateB = b?.dataEmprestimo ? new Date(b.dataEmprestimo + 'T00:00:00') : null; if (!dateA && !dateB) return 0; if (!dateA) return 1; if (!dateB) return -1; return dateA - dateB; }); }
+            const calculateTotalGirando = () => clientData.filter(c => c && !c.pago).reduce((sum, c) => sum + calculateTotalValue(c), 0);
+            const calculateEmCirculacao = () => clientData.filter(c => c && !c.pago).reduce((sum, c) => sum + (parseFloat(c.valorEmprestimo) || 0), 0);
+            const calculateLucroAReceber = () => clientData.filter(c => c && !c.pago).reduce((sum, c) => sum + (parseFloat(c.jurosDinheiro) || 0), 0);
+            const calculateMediaPorcentagem = () => { const v = clientData.filter(c => c && c.valorEmprestimo > 0 && !c.pago); if (v.length === 0) return 0; const p = v.map(c => calculatePercentageInterest(c.valorEmprestimo, c.jurosDinheiro)); const s = p.reduce((a, c) => a + c, 0); return s / v.length; };
+            const calculateLucroRealizado = () => clientData.filter(c => c && c.pago).reduce((sum, c) => sum + (parseFloat(c.jurosDinheiro) || 0), 0);
+            const calculateCurrentLimit = () => INITIAL_INVESTMENT_LIMIT + calculateLucroRealizado();
+            
+            function animateCounter(el, start, end, duration) { 
+                if (!el) return;
+                let startT = null; 
+                function step(ts) { 
+                    if (!startT) startT = ts; 
+                    const p = Math.min((ts - startT) / duration, 1); 
+                    const easedProgress = 1 - Math.pow(1 - p, 3); 
+                    const current = start + (end - start) * easedProgress; 
+                    el.textContent = formatCurrency(current); 
+                    if (p < 1) requestAnimationFrame(step); 
+                    else el.textContent = formatCurrency(end); 
+                } 
+                requestAnimationFrame(step); 
+            }
+            const updateCounters = () => { 
+                try{ 
+                    const vC = calculateEmCirculacao(); 
+                    const tG = calculateTotalGirando(); 
+                    const currentVC = parseFloat(valorCirculacaoPrincipalEl?.textContent.replace(/[^0-9,-]/g, '').replace(',', '.')) || 0; 
+                    const currentTG = parseFloat(totalGirandoEl?.textContent.replace(/[^0-9,-]/g, '').replace(',', '.')) || 0; 
+                    const currentLR = parseFloat(valorLucroReceberEl?.textContent.replace(/[^0-9,-]/g, '').replace(',', '.')) || 0; 
+                    const currentLReal = parseFloat(valorLucroRealizadoEl?.textContent.replace(/[^0-9,-]/g, '').replace(',', '.')) || 0; 
+                    animateCounter(valorCirculacaoPrincipalEl, currentVC, vC, 800); 
+                    animateCounter(totalGirandoEl, currentTG, tG, 800); 
+                    animateCounter(valorLucroReceberEl, currentLR, calculateLucroAReceber(), 800); 
+                    animateCounter(valorLucroRealizadoEl, currentLReal, calculateLucroRealizado(), 800); 
+                    if(valorMediaPorcentagemEl) valorMediaPorcentagemEl.textContent = formatPercentage(calculateMediaPorcentagem()); 
+                } catch (e) { console.error("Erro em updateCounters (Empréstimos):", e);} 
+            };
+            function calculateClientSummaries() {
+                const summary = {};
+                clientData.forEach((client) => {
+                    if (client && client.pago === false && client.nome && client.nome.trim() !== '') {
+                        const normalizedName = client.nome.trim().toLowerCase();
+                        const originalName = client.nome.trim();
+                        const principal = parseFloat(client.valorEmprestimo) || 0;
+                        const interest = parseFloat(client.jurosDinheiro) || 0;
+                        const totalValue = principal + interest;
+
+                        if (summary[normalizedName]) {
+                            summary[normalizedName].totalDue += totalValue;
+                            summary[normalizedName].totalPrincipal += principal;
+                            summary[normalizedName].totalInterest += interest;
+                        } else {
+                            summary[normalizedName] = { name: originalName, totalDue: totalValue, totalPrincipal: principal, totalInterest: interest };
+                        }
+                    }
+                });
+                
+                const summaryArray = Object.values(summary);
+                summaryArray.forEach(item => { item.interestPercentage = item.totalPrincipal > 0 ? (item.totalInterest / item.totalPrincipal) * 100 : 0; });
+                summaryArray.sort((a, b) => b.totalDue - a.totalDue);
+                return summaryArray;
+            }
+            function renderClientSummaries(summaries) {
+                if (!clientSummaryList) return;
+                clientSummaryList.innerHTML = '';
+                if (summaries.length === 0) {
+                    clientSummaryList.innerHTML = '<p class="summary-placeholder">Nenhum valor pendente nesta galáxia.</p>';
+                    return;
+                }
+                summaries.forEach(item => {
+                    const el = document.createElement('div');
+                    el.classList.add('client-summary-item');
+                    el.innerHTML = `
+                        <div class="client-name">${item.name}</div>
+                        <div class="summary-card-flipper">
+                            <div class="summary-card-front"><div class="client-total-due">${formatCurrency(item.totalDue)}</div></div>
+                            <div class="summary-card-back">
+                                <div class="detail-item principal-item"><span class="detail-label"><span class="detail-icon">🚀</span>Principal:</span><span class="detail-value principal">${formatCurrency(item.totalPrincipal)}</span></div>
+                                <div class="detail-item juros-item"><span class="detail-label"><span class="detail-icon">✨</span>Juros:</span><span class="detail-value juros">${formatCurrency(item.totalInterest)}</span></div>
+                                <div class="detail-item taxa-item"><span class="detail-label"><span class="detail-icon">🌀</span>Taxa:</span><span class="detail-value percent">${formatPercentage(item.interestPercentage)}</span></div>
+                            </div>
+                        </div>`;
+                    clientSummaryList.appendChild(el);
+                });
+            }
+            function renderOrUpdateClientChart(summaries) { 
+                try { 
+                    if (!clientDebtChartCanvas || !clientChartContainer) return; 
+                    const ctx = clientDebtChartCanvas.getContext('2d'); 
+                    const hasData = summaries && summaries.length > 0; 
+                    chartPlaceholder.style.display = hasData ? 'none' : 'block'; 
+                    clientDebtChartCanvas.style.display = hasData ? 'block' : 'none'; 
+                    if (!hasData) { if (clientChartInstance) { clientChartInstance.destroy(); clientChartInstance = null; } chartPlaceholder.textContent = "Nenhum explorador com pendências."; return; } 
+                    const labels = summaries.map(item => item.name); 
+                    const dataValues = summaries.map(item => item.totalDue); 
+                    const backgroundColors = generateChartColors(summaries.length); 
+                    const config = { type: 'doughnut', data: { labels: labels, datasets: [{ label: 'Valor Devido', data: dataValues, backgroundColor: backgroundColors, borderColor: '#0D1117', borderWidth: 2, hoverOffset: 8, hoverBorderColor: '#fff', hoverBorderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: '#E0E0E0', padding: 15, boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: (ctx) => `${ctx.label || ''}: ${formatCurrency(ctx.parsed)}` }, backgroundColor: 'rgba(13, 17, 23, 0.95)', titleFont: { size: 13, weight: '500' }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6, displayColors: true, boxPadding: 4, titleMarginBottom: 6, bodySpacing: 3 } }, layout: { padding: { top: 10, bottom: 10 } }, animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutCubic' } } }; 
+                    if (clientChartInstance) { 
+                        clientChartInstance.data.labels = labels; 
+                        clientChartInstance.data.datasets[0].data = dataValues; 
+                        clientChartInstance.data.datasets[0].backgroundColor = backgroundColors; 
+                        clientChartInstance.update('none'); 
+                    } else { clientChartInstance = new Chart(ctx, config); } 
+                } catch(e) { console.error("Erro Gráfico Cliente (Empréstimos):", e); if (chartPlaceholder) { chartPlaceholder.textContent = "Falha ao renderizar mapa estelar."; chartPlaceholder.style.display = 'block'; } if (clientDebtChartCanvas) clientDebtChartCanvas.style.display = 'none'; if (clientChartInstance) { clientChartInstance.destroy(); clientChartInstance = null; } } 
+            }
+            function triggerClientSummaryRender() { try { const s = calculateClientSummaries(); renderClientSummaries(s); renderOrUpdateClientChart(s); } catch (e) { console.error("Erro trigger Cliente (Empréstimos):", e); } }
+            function updateInvestmentLimitBar() { 
+                if (!progressBarFillEl || !circulacaoValorEl || !limiteValorEl || !disponivelValorEl || !progressBarPercentageEl) return; 
+                const emCirc = calculateEmCirculacao(); 
+                const limit = calculateCurrentLimit(); 
+                let effLimit = limit; 
+                if (emCirc > limit) effLimit = emCirc; 
+                const disp = effLimit - emCirc; 
+                let perc = 0; if (effLimit > 0) perc = Math.min(100, (emCirc / effLimit) * 100); 
+                else if (emCirc > 0) perc = 100; 
+                circulacaoValorEl.textContent = formatCurrency(emCirc); 
+                limiteValorEl.textContent = formatCurrency(effLimit); 
+                disponivelValorEl.textContent = formatCurrency(disp > 0 ? disp : 0); 
+                progressBarPercentageEl.textContent = `${perc.toFixed(1)}% Utilizado`; 
+                progressBarFillEl.style.width = `${perc}%`; 
+                disponivelValorEl.className = 'available'; 
+                if (disp <= 0) disponivelValorEl.classList.add('danger'); 
+                else if (perc > 85) disponivelValorEl.classList.add('warning'); 
+            }
+            function renderOrUpdateAdditionalCharts() { 
+                try { 
+                    if (profitMarginChartCanvas && profitMarginPlaceholder) { 
+                        const ctx = profitMarginChartCanvas.getContext('2d'); 
+                        const p = clientData.reduce((s, c) => s + (parseFloat(c.valorEmprestimo) || 0), 0); 
+                        const j = clientData.reduce((s, c) => s + (parseFloat(c.jurosDinheiro) || 0), 0); 
+                        const has = p > 0 || j > 0; 
+                        profitMarginPlaceholder.style.display = has ? 'none' : 'block'; 
+                        profitMarginChartCanvas.style.display = has ? 'block' : 'none'; 
+                        if (!has) { if (profitMarginChartInstance) { profitMarginChartInstance.destroy(); profitMarginChartInstance = null; } profitMarginPlaceholder.textContent = "Dados insuficientes para análise."; 
+                        } else { 
+                            const d = { labels: ['Capital Base Total', 'Rendimento Estelar Total'], datasets: [{ data: [p, j], backgroundColor: generateChartColors(2).slice(0,2), borderColor: '#0D1117', borderWidth: 2, hoverOffset: 5 }] }; 
+                            const cfg = { type: 'pie', data: d, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#E0E0E0', padding: 12 } }, tooltip: { callbacks: { label: (c) => `${c.label||''}: ${formatCurrency(c.parsed)}` }, backgroundColor: 'rgba(13, 17, 23, 0.95)', cornerRadius: 6, padding: 10 } }, animation: { animateScale: true, duration: 700, easing: 'easeOutBack' } } }; 
+                            if (profitMarginChartInstance) { profitMarginChartInstance.data = d; profitMarginChartInstance.update('none'); } 
+                            else { profitMarginChartInstance = new Chart(ctx, cfg); }
+                        }
+                    } 
+                    if (loanStatusChartCanvas && loanStatusPlaceholder) { 
+                        const ctx = loanStatusChartCanvas.getContext('2d'); 
+                        const pago = clientData.filter(c => c && c.pago).length; 
+                        const naoPago = clientData.filter(c => c && !c.pago).length; 
+                        const has = pago > 0 || naoPago > 0; 
+                        loanStatusPlaceholder.style.display = has ? 'none' : 'block'; 
+                        loanStatusChartCanvas.style.display = has ? 'block' : 'none'; 
+                        if (!has) { if (loanStatusChartInstance) { loanStatusChartInstance.destroy(); loanStatusChartInstance = null; } loanStatusPlaceholder.textContent = "Nenhuma missão registrada."; 
+                        } else { 
+                            const d = { labels: ['Missões Concluídas', 'Missões em Andamento'], datasets: [{ data: [pago, naoPago], backgroundColor: generateChartColors(4).slice(2,4), borderColor: '#0D1117', borderWidth: 2, hoverOffset: 5 }] }; 
+                            const cfg = { type: 'doughnut', data: d, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#E0E0E0', padding: 12 } }, tooltip: { callbacks: { label: (c) => `${c.label||''}: ${c.parsed}` }, backgroundColor: 'rgba(13, 17, 23, 0.95)', cornerRadius: 6, padding: 10 } }, animation: { animateScale: true, animateRotate: true, duration: 700, easing: 'easeOutCubic' } } }; 
+                            if (loanStatusChartInstance) { loanStatusChartInstance.data = d; loanStatusChartInstance.update('none'); } 
+                            else { loanStatusChartInstance = new Chart(ctx, cfg); }
+                        }
+                    } 
+                } catch (e) { console.error("Erro Gráficos Adicionais (Empréstimos):", e); } 
+            }
+            function triggerFinancialAnalysisRender() { try { updateInvestmentLimitBar(); renderOrUpdateAdditionalCharts(); } catch(e) { console.error("Erro trigger Análise (Empréstimos):", e); } }
+            function calculateCashFlowData() { 
+                if (clientData.length === 0) return [{ x: new Date(), y: INITIAL_INVESTMENT_LIMIT }]; 
+                let transactions = []; let firstDate = null; 
+                clientData.forEach(loan => { if (loan.dataEmprestimo && (!firstDate || new Date(loan.dataEmprestimo) < firstDate)) firstDate = new Date(loan.dataEmprestimo + 'T00:00:00'); }); 
+                const startDate = firstDate || new Date(); 
+                const initialPointDate = new Date(startDate); initialPointDate.setDate(initialPointDate.getDate() - 1); 
+                transactions.push({ date: initialPointDate, value: INITIAL_INVESTMENT_LIMIT, type: 'initial' }); 
+                clientData.forEach(loan => { 
+                    if (loan.dataEmprestimo && !isNaN(new Date(loan.dataEmprestimo).getTime())) { const amount = parseFloat(loan.valorEmprestimo) || 0; if (amount > 0) transactions.push({ date: new Date(loan.dataEmprestimo + 'T00:00:00'), value: -amount, type: 'loan_out' }); } 
+                    if (loan.pago === true && loan.dataVencimento && !isNaN(new Date(loan.dataVencimento).getTime())) { const amount = calculateTotalValue(loan); if (amount > 0) transactions.push({ date: new Date(loan.dataVencimento + 'T00:00:00'), value: amount, type: 'payment_in' }); }
+                }); 
+                transactions.sort((a, b) => a.date - b.date); 
+                let cashFlowPoints = []; let balance = 0; 
+                transactions.forEach((t, i) => { balance = (i === 0 && t.type === 'initial') ? t.value : balance + t.value; cashFlowPoints.push({ x: t.date.getTime(), y: balance }); }); 
+                return cashFlowPoints; 
+            }
+            function renderOrUpdateCashFlowChart(cashFlowData) { 
+                try { 
+                    if (!cashFlowChartCanvas || !cashFlowPlaceholder) return; 
+                    const ctx = cashFlowChartCanvas.getContext('2d'); if (!ctx) return; 
+                    const hasData = cashFlowData && cashFlowData.length > 1; 
+                    cashFlowPlaceholder.style.display = hasData ? 'none' : 'block'; 
+                    cashFlowChartCanvas.style.display = hasData ? 'block' : 'none'; 
+                    if (!hasData) { if (cashFlowChartInstance) { cashFlowChartInstance.destroy(); cashFlowChartInstance = null; } cashFlowPlaceholder.textContent = "Dados insuficientes para traçar rota."; return; } 
+                    cashFlowData.sort((a, b) => a.x - b.x); 
+                    const config = { type: 'line', data: { datasets: [{ label: 'Saldo Capital', data: cashFlowData, borderColor: generateChartColors(1)[2], backgroundColor: 'rgba(52, 211, 153, 0.1)', borderWidth: 2, pointBackgroundColor: generateChartColors(1)[2], pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: generateChartColors(1)[2], tension: 0.2, fill: true, pointRadius: 3, pointHoverRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', adapter: { date: dateFns }, time: { unit: cashFlowData.length > 60 ? 'month' : 'day', tooltipFormat: 'dd/MM/yyyy', displayFormats: { month: 'MMM/yy', day: 'dd/MM' } }, ticks: { color: '#D1D5DB', maxRotation: 0, autoSkipPadding: 25 }, grid: { color: 'rgba(167, 139, 250, 0.08)' } }, y: { beginAtZero: false, ticks: { color: '#D1D5DB', callback: (v) => formatCurrency(v).replace('R$', '') }, grid: { color: 'rgba(167, 139, 250, 0.1)' } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => items[0] ? dateFns.format(items[0].parsed.x, 'dd/MM/yyyy') : '', label: (ctx) => ` Saldo: ${formatCurrency(ctx.parsed.y)}` }, backgroundColor: 'rgba(13, 17, 23, 0.95)', titleFont: { size: 13 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6, bodySpacing: 4 } }, interaction: { mode: 'index', intersect: false }, animation: { duration: 1000, easing: 'easeOutCubic' } } }; 
+                    if (cashFlowChartInstance) { 
+                        cashFlowChartInstance.data.datasets[0].data = cashFlowData; 
+                        cashFlowChartInstance.options.scales.x.time.unit = cashFlowData.length > 60 ? 'month' : 'day'; 
+                        cashFlowChartInstance.update('none'); 
+                    } else { cashFlowChartInstance = new Chart(ctx, config); } 
+                } catch (e) { console.error("Erro Gráfico Fluxo Caixa (Empréstimos):", e); if (cashFlowPlaceholder) { cashFlowPlaceholder.textContent = "Falha ao mapear fluxo temporal."; cashFlowPlaceholder.style.display = 'block'; } if (cashFlowChartCanvas) cashFlowChartCanvas.style.display = 'none'; if (cashFlowChartInstance) { cashFlowChartInstance.destroy(); cashFlowChartInstance = null; } } 
+            }
+            function triggerCashFlowRender() { try { const data = calculateCashFlowData(); renderOrUpdateCashFlowChart(data); } catch(e) { console.error("Erro trigger Fluxo (Empréstimos):", e); } }
+            function updateAllDynamicSectionsEmprestimos() { 
+                try { updateCounters(); } catch(e) { console.error("Erro updateCounters (Empréstimos):", e); } 
+                const checkAndTrigger = (section, flagName, triggerFn) => { 
+                    if (section?.classList.contains('visible') || !initializedFlags[flagName]) { 
+                        try { triggerFn(); } catch (e) { console.error(`Erro DENTRO trigger ${flagName} (Empréstimos):`, e); } 
+                    } 
+                }; 
+                checkAndTrigger(clientSummarySection, 'summaryRendered', triggerClientSummaryRender); 
+                checkAndTrigger(financialAnalysisSection, 'financialAnalysisRendered', triggerFinancialAnalysisRender); 
+                checkAndTrigger(cashFlowSection, 'cashFlowRendered', triggerCashFlowRender); 
+            }
+            
+            let summaryObserver, financialAnalysisObserver, cashFlowObserver;
+            function setupIntersectionObservers() {
+                if (summaryObserver) summaryObserver.disconnect();
+                if (financialAnalysisObserver) financialAnalysisObserver.disconnect();
+                if (cashFlowObserver) cashFlowObserver.disconnect();
+                const createObserverCallback = (sectionElement, flagName, renderTriggerFn) => (entries, observer) => { entries.forEach(entry => { if (entry.isIntersecting) { if (sectionElement) sectionElement.classList.add('visible'); if (!initializedFlags[flagName]) { initializedFlags[flagName] = true; try { renderTriggerFn(); } catch(e) { console.error(`Erro trigger observer ${flagName} (Empréstimos):`, e); } } } }); };
+                summaryObserver = new IntersectionObserver(createObserverCallback(clientSummarySection, 'summaryRendered', triggerClientSummaryRender), { threshold: 0.05, rootMargin: "0px 0px -50px 0px" }); 
+                if (clientSummarySection) summaryObserver.observe(clientSummarySection);
+                financialAnalysisObserver = new IntersectionObserver(createObserverCallback(financialAnalysisSection, 'financialAnalysisRendered', triggerFinancialAnalysisRender), { threshold: 0.05, rootMargin: "0px 0px -50px 0px" }); 
+                if (financialAnalysisSection) financialAnalysisObserver.observe(financialAnalysisSection);
+                cashFlowObserver = new IntersectionObserver(createObserverCallback(cashFlowSection, 'cashFlowRendered', triggerCashFlowRender), { threshold: 0.05, rootMargin: "0px 0px -50px 0px" }); 
+                if (cashFlowSection) cashFlowObserver.observe(cashFlowSection);
+            }
+
+            const renderTable = () => { 
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
+                if (!Array.isArray(clientData) || clientData.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:30px; color:#A0AEC0;">Nenhuma missão de crédito detectada.</td></tr>';
+                    return;
+                }
+                clientData.forEach((client, index) => {
+                    try {
+                        if (!client || typeof client.id === 'undefined') return;
+                        const taxa = calculatePercentageInterest(client.valorEmprestimo, client.jurosDinheiro);
+                        const total = calculateTotalValue(client);
+                        const row = tableBody.insertRow();
+                        row.dataset.id = client.id;
+                        row.classList.add('row-entering');
+                        const dataEmpFormatada = client.dataEmprestimo ? new Date(client.dataEmprestimo + 'T00:00:00').toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '';
+                        const dataVencFormatada = client.dataVencimento ? new Date(client.dataVencimento + 'T00:00:00').toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '';
+                        row.innerHTML = `
+                            <td data-label="ID">${client.id.substring(0,8)}...</td>
+                            <td data-label="Cliente" data-field="nome">${client.nome || 'S/N'}</td>
+                            <td data-label="Valor Base" data-field="valorEmprestimo" data-type="number">${formatCurrency(client.valorEmprestimo)}</td>
+                            <td data-label="Juros (R$)" data-field="jurosDinheiro" data-type="number">${formatCurrency(client.jurosDinheiro)}</td>
+                            <td data-label="Taxa (%)" class="percentage-cell">${formatPercentage(taxa)}</td>
+                            <td data-label="Data" data-field="dataEmprestimo" data-type="date" data-value="${client.dataEmprestimo || ''}">${dataEmpFormatada}</td>
+                            <td data-label="Validade" data-field="dataVencimento" data-type="date" data-value="${client.dataVencimento || ''}">${dataVencFormatada}</td>
+                            <td data-label="Total">${formatCurrency(total)}</td>
+                            <td data-label="Coletado?" data-field="pago" data-type="boolean"><input type="checkbox" ${client.pago ? 'checked' : ''} data-id="${client.id}"></td>
+                            <td data-label="Comandos"><button class="delete-button" data-id="${client.id}">Ejetar</button></td>`;
+                        row.querySelectorAll('td[data-field]:not([data-field="pago"])').forEach(c => c.addEventListener('dblclick', (e) => makeCellEditable(e.currentTarget, client.id), { once: true }));
+                        row.querySelector('input[type="checkbox"]')?.addEventListener('change', (e) => handleCheckboxChange(e, client.id));
+                        row.querySelector('.delete-button')?.addEventListener('click', () => showDeleteConfirmation(client.id));
+                        requestAnimationFrame(() => row.classList.add('visible'));
+                    } catch (error) { console.error(`[renderTable] Erro renderizando linha ${index}:`, error); }
+                });
+            };
+
+            const makeCellEditable = (cell, id) => { 
+                const client = clientData.find(cl => cl && cl.id === id);
+                if (!client || cell.querySelector('input')) return;
+                const field = cell.dataset.field;
+                const type = cell.dataset.type;
+                const originalValue = type === 'date' ? cell.dataset.value : client[field];
+                const originalHTML = cell.innerHTML;
+                cell.classList.add('editing');
+                cell.innerHTML = '';
+                let inputElement;
+                if (type === 'date') { inputElement = document.createElement('input'); inputElement.type = 'date'; inputElement.value = originalValue || ''; }
+                else if (type === 'number') { inputElement = document.createElement('input'); inputElement.type = 'number'; inputElement.value = originalValue || 0; if (field === 'jurosDinheiro' || field === 'valorEmprestimo') inputElement.step = '0.01'; inputElement.min = '0'; }
+                else { inputElement = document.createElement('input'); inputElement.type = 'text'; inputElement.value = originalValue || ''; }
+                const save = () => { if (!cell.contains(inputElement)) return; cell.classList.remove('editing'); saveEdit(inputElement, cell, id, field, originalHTML); };
+                const cancel = (event) => { event?.stopPropagation(); if (!cell.contains(inputElement)) return; cell.classList.remove('editing'); cell.innerHTML = originalHTML; setTimeout(() => { if(document.body.contains(cell)) cell.addEventListener('dblclick', (e) => makeCellEditable(e.currentTarget, id), { once: true }); }, 50); };
+                inputElement.addEventListener('blur', save);
+                inputElement.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } else if (e.key === 'Escape') { cancel(e); } });
+                cell.appendChild(inputElement);
+                inputElement.focus();
+                inputElement.select();
+            };
+            async function saveEdit(input, cell, id, field, originalHTML) { 
+                let newValue = input.value;
+                const type = cell.dataset.type;
+                let validationError = false;
+                let valueToSave = newValue;
+
+                if (type === 'number') { valueToSave = newValue.replace(',', '.'); valueToSave = parseFloat(valueToSave); if (isNaN(valueToSave) || valueToSave < 0) { validationError = true; } }
+                else if (type === 'date') { if (newValue && !/^\d{4}-\d{2}-\d{2}$/.test(newValue)) { validationError = true; } else if (newValue && isNaN(new Date(newValue + 'T00:00:00').getTime())) { validationError = true; } valueToSave = newValue; }
+                else if (type === 'text') { valueToSave = newValue.trim(); }
+
+                const clientIndex = clientData.findIndex(c => c && c.id === id);
+                if (clientIndex === -1) return;
+
+                const currentValue = clientData[clientIndex][field];
+                let valueChanged = (type === 'number') ? parseFloat(currentValue) !== valueToSave : currentValue != valueToSave;
+
+                if (validationError || !valueChanged) {
+                    cell.innerHTML = originalHTML;
+                    setTimeout(() => { if(document.body.contains(cell)) cell.addEventListener('dblclick', (e) => makeCellEditable(e.currentTarget, id), { once: true }); }, 50);
+                    return;
+                }
+
+                const updatePayload = { [field]: valueToSave };
+                if (field === 'dataEmprestimo' && type === 'date' && !validationError) {
+                    updatePayload.dataVencimento = addOneMonth(valueToSave);
+                }
+                try {
+                    await update(child(emprestimosRef, id), updatePayload);
+                } catch (e) {
+                    console.error("Erro no Firebase update:", e);
+                    cell.innerHTML = originalHTML;
+                    setTimeout(() => { if(document.body.contains(cell)) cell.addEventListener('dblclick', (ev) => makeCellEditable(ev.currentTarget, id), { once: true }); }, 50);
+                }
+            }
+            async function handleCheckboxChange(event, id) { 
+                const isChecked = event.target.checked;
+                try {
+                    await update(child(emprestimosRef, id), { pago: isChecked });
+                } catch (e) {
+                    console.error("Erro handleCheckbox Firebase:", e);
+                    event.target.checked = !isChecked; // Revert
+                }
+            }
+            async function addNewClient() { 
+                const date = new Date().toISOString().split('T')[0];
+                const newData = { nome: `Explorador #${Math.floor(Math.random()*1000)}`, valorEmprestimo: 0, jurosDinheiro: 0, dataEmprestimo: date, dataVencimento: addOneMonth(date), pago: false };
+                try {
+                    const newRecordRef = await push(emprestimosRef, newData);
+                    setTimeout(()=>{
+                        const nR = tableBody.querySelector(`tr[data-id='${newRecordRef.key}']`);
+                        if(nR){ nR.scrollIntoView({behavior:'smooth', block:'center'}); const cell = nR.querySelector('td[data-field="nome"]'); if(cell) setTimeout(() => makeCellEditable(cell, newRecordRef.key), 100); }
+                    }, 300);
+                } catch (e) { console.error("Erro addNewClient Firebase:", e); }
+            }
+            function showDeleteConfirmation(id) { const c=clientData.find(cl=>cl&&cl.id===id); if(!c) return; loanIdToDelete=id; if (modalMessage) modalMessage.innerHTML=`Ejetar missão de <strong>${c.nome||'S/N'}</strong> (ID: ${id.substring(0,8)}...)? <br><strong>Ação irreversível!</strong>`; if (confirmDeleteOverlay) confirmDeleteOverlay.classList.add('active'); }
+            function hideConfirmationModal() { if (confirmDeleteOverlay) confirmDeleteOverlay.classList.remove('active'); loanIdToDelete=null; }
+            async function executeDelete() { 
+                if(!loanIdToDelete) return;
+                const id = loanIdToDelete;
+                if(confirmDeleteBtn) { confirmDeleteBtn.textContent='Ejetando...'; confirmDeleteBtn.disabled=true; }
+                if(cancelDeleteBtn) cancelDeleteBtn.disabled=true;
+                try {
+                    await remove(child(emprestimosRef, id));
+                    hideConfirmationModal();
+                } catch(e) { console.error("Erro executeDelete Firebase:", e); } 
+                finally { if(confirmDeleteBtn) { confirmDeleteBtn.textContent='Sim, Ejetar!'; confirmDeleteBtn.disabled=false; } if(cancelDeleteBtn) cancelDeleteBtn.disabled=false; }
+            }
+        
+            if (addClientBtn) addClientBtn.addEventListener('click', addNewClient);
+            if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', executeDelete);
+            if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', hideConfirmationModal);
+            if (confirmDeleteOverlay) confirmDeleteOverlay.addEventListener('click', (e)=>{ if(e.target===confirmDeleteOverlay) hideConfirmationModal(); });
+
+            onValue(emprestimosRef, (snapshot) => {
+                showGlobalLoading();
+                if (snapshot.exists()) {
+                    clientData = Object.entries(snapshot.val()).map(([key, value]) => ({ id: key, ...value })).filter(item => item !== null);
+                    sortClientDataByDate();
+                } else { 
+                    clientData = []; 
+                }
+                renderTable();
+                updateAllDynamicSectionsEmprestimos();
+                setupIntersectionObservers();
+                hideGlobalLoading();
+            }, (error) => {
+                console.error("Erro ao escutar dados do Firebase:", error);
+                showGlobalNotification("Falha na conexão em tempo real com a base de empréstimos.", "error");
+                clientData = [];
+                renderTable();
+                updateAllDynamicSectionsEmprestimos();
+                hideGlobalLoading();
+            });
+        }
+
+        // --- Initialize the page on load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initEmprestimosPage(); 
+        });
+    </script>
+    
+    <script>
+        // PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('Service Worker registrado!', reg))
+                .catch(err => console.error('Erro no Service Worker:', err));
+            });
+        }
+    </script>
+</body>
+</html>
