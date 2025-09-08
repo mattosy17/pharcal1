@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Bordo - Linkine</title>
+    
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#8B5CF6" />
+
+    <!-- CDNs (Consolidated) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
+    <!-- LINK CORRIGIDO PARA O PORTUGUÊS -->
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/locale/pt-BR/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+    <!-- Fonts (Consolidated) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📸</text></svg>">
+
+    <style>
+        :root {
+            --font-body: 'Inter', sans-serif;
+            --font-title: 'Orbitron', sans-serif;
+            --cosmos-bg: #0D1117;
+            --cosmos-text-primary: #E5E7EB;
+            --cosmos-text-secondary: #9CA3AF;
+            --cosmos-card-bg: rgba(29, 29, 40, 0.88);
+            --cosmos-border: rgba(124, 58, 237, 0.40);
+            --cosmos-border-hover: rgba(167, 139, 250, 0.7);
+            --cosmos-shadow-strong: rgba(0, 0, 0, 0.55);
+            --cosmos-shadow-soft-glow: rgba(167, 139, 250, 0.12);
+            --cosmos-purple-primary: #A78BFA;
+            --cosmos-purple-secondary: #C4B5FD;
+            --cosmos-purple-dark: #8B5CF6;
+            --cosmos-blue-accent: #60A5FA;
+            --cosmos-pink-accent: #EC4899;
+            --cosmos-cyan-accent: #6AF2F0;
+            --cosmos-cyan-glow: rgba(106, 242, 240, 0.35);
+            --cosmos-positive: #34D399;
+            --cosmos-positive-glow: rgba(52, 211, 153, 0.5);
+            --cosmos-negative: #F87171;
+            --cosmos-negative-glow: rgba(248, 113, 113, 0.5);
+            --cosmos-warning: #FBBF24;
+            --cosmos-warning-glow: rgba(251, 191, 36, 0.5);
+            --cosmos-input-bg: rgba(13, 17, 23, 0.92);
+            --cosmos-input-border: rgba(124, 58, 237, 0.45);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            line-height: 1.6;
+            background-color: var(--cosmos-bg);
+            color: var(--cosmos-text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-top: 70px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        #starry-sky-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+            background-image:
+                radial-gradient(ellipse at center, rgba(30, 27, 75, 0.12) 0%, transparent 70%),
+                radial-gradient(circle at 30% 50%, rgba(190, 210, 255, 0.5) 0.5px, transparent 1px),
+                radial-gradient(circle at 70% 30%, rgba(220, 200, 255, 0.7) 0.5px, transparent 1px);
+            opacity: 0;
+            animation: subtleStarShine 35s infinite alternate ease-in-out, fadeInBg 3s 0.5s ease-out forwards;
+        }
+        @keyframes subtleStarShine { 0% { opacity: 0.6; } 100% { opacity: 0.9; } }
+        @keyframes fadeInBg { to { opacity: 0.85; } }
+        #main-nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background-color: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(12px) saturate(150%);
+            padding: 0.75rem 1.5rem; display: flex;
+            justify-content: center; align-items: center; gap: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); z-index: 1000;
+            border-bottom: 1px solid var(--cosmos-border);
+        }
+        #main-nav a {
+            font-family: var(--font-title); font-size: 0.9em; font-weight: 500;
+            color: var(--cosmos-text-secondary); background-color: transparent;
+            border: 1px solid transparent; padding: 0.5rem 1rem; border-radius: 0.375rem;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none;
+        }
+        #main-nav a:hover {
+            color: var(--cosmos-text-primary); background-color: rgba(167, 139, 250, 0.1);
+            border-color: var(--cosmos-purple-primary); transform: translateY(-2px);
+        }
+        #main-nav a.active {
+            color: var(--cosmos-cyan-accent); background-color: rgba(106, 242, 240, 0.15);
+            border-color: var(--cosmos-cyan-accent); box-shadow: 0 0 10px var(--cosmos-cyan-glow); font-weight: 700;
+        }
+        .loading-spinner-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 17, 23, 0.7); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center; z-index: 2000;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+        }
+        .loading-spinner-overlay.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .spinner {
+            width: 60px; height: 60px; border: 5px solid rgba(106, 242, 240, 0.2);
+            border-top-color: var(--cosmos-cyan-accent); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #notification-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+            display: flex; flex-direction: column-reverse; gap: 10px;
+        }
+        .notification-popup {
+            background-color: var(--cosmos-card-bg); color: var(--cosmos-text-primary);
+            padding: 12px 18px; border-radius: 0.5rem; border-left: 5px solid var(--cosmos-blue-accent);
+            box-shadow: 0 5px 20px var(--cosmos-shadow-strong); opacity: 0; transform: translateX(120%);
+            transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-width: 280px; display: flex; align-items: center; cursor: pointer;
+        }
+        .notification-popup.show { opacity: 1; transform: translateX(0); }
+        .notification-popup.success { border-left-color: var(--cosmos-positive); }
+        .notification-popup.error { border-left-color: var(--cosmos-negative); }
+        .notification-popup .icon { margin-right: 12px; font-size: 1.3em; }
+        .page-view { padding: 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; width: 100%; }
+        #page-linkine header { text-align: center; margin-bottom: 2.5rem; }
+        #page-linkine header h1 {
+            font-family: var(--font-title); font-weight: 700; font-size: 2.8em;
+            background: linear-gradient(135deg, var(--cosmos-cyan-accent), #fff, var(--cosmos-purple-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            background-size: 300% 300%;
+            text-shadow: 0 0 15px var(--cosmos-cyan-glow), 0 0 30px var(--cosmos-purple-primary);
+            animation: textAurora 7s ease-in-out infinite;
+        }
+        @keyframes textAurora { 0% { background-position: 0% 50%;} 50% { background-position: 100% 50%;} 100% { background-position: 0% 50%;} }
+        
+        #page-linkine .date-selector-control {
+            background-color: var(--cosmos-card-bg); backdrop-filter: blur(10px);
+            border: 1px solid var(--cosmos-border); padding: 1.2rem 1.5rem; border-radius: 0.75rem;
+            box-shadow: 0 6px 25px var(--cosmos-shadow-strong); margin-bottom: 2.5rem;
+            display: flex; gap: 1rem; align-items: center; justify-content: center;
+        }
+        #page-linkine .date-selector-control label { font-family: var(--font-title); color: var(--cosmos-purple-secondary); letter-spacing: 1px; }
+        #page-linkine .date-selector-control input[type="month"] {
+            padding: 0.8rem 1.2rem; background-color: var(--cosmos-input-bg); color: var(--cosmos-text-primary);
+            border: 1px solid var(--cosmos-input-border); border-radius: 0.375rem; font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+        #page-linkine .date-selector-control input[type="month"]:focus {
+            outline: none; border-color: var(--cosmos-cyan-accent);
+            box-shadow: 0 0 15px var(--cosmos-cyan-glow);
+        }
+        
+        #page-linkine .secao {
+            background-color: var(--cosmos-card-bg); backdrop-filter: blur(16px) saturate(150%); 
+            border: 1px solid var(--cosmos-border); padding: 2rem 2.5rem; border-radius: 1rem;
+            box-shadow: 0 8px 30px var(--cosmos-shadow-strong), inset 0 0 5px rgba(0,0,0,0.5);
+            margin-bottom: 2.5rem;
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        #page-linkine .secao.visible { opacity: 1; transform: translateY(0); }
+        
+        #page-linkine .secao h2 {
+            font-family: var(--font-title); font-size: 1.8em; margin-bottom: 1.8rem;
+            position: relative; padding-bottom: 0.8rem; font-weight: 500; letter-spacing: 0.5px;
+            color: var(--cosmos-text-primary);
+        }
+        #page-linkine .secao h2::after { 
+            content: ''; position: absolute; bottom: -2px; left: 0;
+            width: 0; height: 3px; 
+            background: linear-gradient(90deg, var(--cosmos-cyan-accent), var(--cosmos-pink-accent));
+            border-radius: 3px;
+            transition: width 0.5s ease-out 0.3s;
+        }
+        #page-linkine .secao.visible h2::after { width: 60px; }
+        
+        #page-linkine .cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.8rem; }
+        #page-linkine .card {
+            background: linear-gradient(145deg, rgba(35,40,60,0.92), rgba(25,30,45,0.97)); 
+            border: 1px solid var(--cosmos-border); padding: 1.5rem; border-radius: 0.75rem;
+            box-shadow: 0 4px 18px var(--cosmos-shadow-strong), inset 0 1px 2px rgba(0,0,0,0.4);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+        }
+        #page-linkine .card:hover {
+            transform: translateY(-8px) scale(1.03);
+            border-color: var(--cosmos-cyan-accent);
+            box-shadow: 0 12px 35px var(--cosmos-shadow-strong), 0 0 25px var(--cosmos-cyan-glow);
+        }
+        #page-linkine .card h3 { font-family: var(--font-title); font-size: 1.1em; color: var(--cosmos-purple-secondary); margin-bottom: 0.8rem; font-weight: 400; }
+        #page-linkine .card p { font-size: 1.8em; font-weight: 700; font-family: var(--font-title); transition: text-shadow 0.3s ease; }
+        #page-linkine .card .positivo { color: var(--cosmos-positive); text-shadow: 0 0 8px var(--cosmos-positive-glow); }
+        #page-linkine .card .negativo { color: var(--cosmos-negative); text-shadow: 0 0 8px var(--cosmos-negative-glow); }
+        #page-linkine .card .neutro { color: var(--cosmos-warning); text-shadow: 0 0 8px var(--cosmos-warning-glow); }
+        #page-linkine .card .mini-btn {
+            background: rgba(106, 242, 240, 0.1); border: 1px solid rgba(106, 242, 240, 0.3);
+            color: var(--cosmos-cyan-accent); padding: 0.2rem 0.5rem; border-radius: 0.25rem;
+            font-size: 0.8em; cursor: pointer; margin-left: 0.5rem; transition: all 0.3s ease;
+        }
+        #page-linkine .card .mini-btn:hover { background-color: rgba(106, 242, 240, 0.2); box-shadow: 0 0 8px var(--cosmos-cyan-glow); transform: scale(1.1); }
+        
+        #page-linkine .progress-bar-meta-bg { width: 100%; height: 10px; background-color: rgba(13,17,23,0.7); border-radius: 5px; margin-top: 0.5rem; overflow: hidden; }
+        #page-linkine .progress-bar-meta-fill { height: 100%; background-image: linear-gradient(90deg, var(--cosmos-positive), var(--cosmos-cyan-accent)); transition: width 0.8s ease-out; border-radius: 5px; }
+        
+        #page-linkine .graficos-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
+        #page-linkine .grafico-card {
+            background-color: rgba(20,25,40,0.7); padding: 1.5rem; border-radius: 0.75rem;
+            min-height: 350px; display: flex; flex-direction: column;
+        }
+        #page-linkine .grafico-card h3 { text-align: center; margin-bottom: 1.5rem; font-family: var(--font-title); font-weight: 400; color: var(--cosmos-purple-secondary); }
+        #page-linkine .grafico-wrapper { position: relative; flex-grow: 1; width: 100%; }
+        #page-linkine .grafico-placeholder { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: var(--cosmos-text-secondary); font-style: italic; }
+        
+        #linkineEvolucaoChartContainer { padding: 1.5rem; background-color: rgba(20,25,40,0.7); border-radius: 0.85rem; height: 400px; }
+
+        #page-linkine .form-transacao { margin-top: 1.5rem; padding: 2rem; background-color: rgba(20,25,40,0.8); border-radius: 0.75rem; }
+        #page-linkine .form-transacao .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; align-items: end; }
+        #page-linkine .form-transacao label { display: block; margin-bottom: 0.4rem; font-size: 0.9em; color: var(--cosmos-text-secondary); }
+        #page-linkine .form-transacao input, #page-linkine .form-transacao select {
+            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--cosmos-input-border);
+            border-radius: 0.375rem; background-color: var(--cosmos-input-bg); color: var(--cosmos-text-primary);
+            transition: all 0.3s ease;
+        }
+        #page-linkine .form-transacao input:focus, #page-linkine .form-transacao select:focus {
+            outline: none; border-color: var(--cosmos-cyan-accent);
+            box-shadow: 0 0 15px var(--cosmos-cyan-glow);
+        }
+        #page-linkine .form-transacao button { border: none; padding: 0.8rem 1.8rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-family: var(--font-title); color: #fff; background-image: linear-gradient(135deg, var(--cosmos-purple-dark) 0%, var(--cosmos-blue-accent) 100%); transition: all 0.3s ease; }
+        #page-linkine .form-transacao button:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3); }
+        
+        #page-linkine table { width: 100%; border-collapse: separate; border-spacing: 0; background-color: rgba(15, 18, 30, 0.85); border-radius: 0.75rem; overflow: hidden; }
+        #page-linkine th { background-color: rgba(20, 25, 45, 0.9); color: var(--cosmos-cyan-accent); padding: 1rem 1.2rem; font-family: var(--font-title); border-bottom: 2px solid var(--cosmos-cyan-accent); text-align: left; }
+        #page-linkine td { padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--cosmos-input-border); vertical-align: middle; transition: all 0.3s ease; }
+        #page-linkine tbody tr:hover { background-color: rgba(106, 242, 240, 0.07); color: var(--cosmos-cyan-accent); }
+        #page-linkine tbody tr:hover td { color: var(--cosmos-cyan-accent); }
+        #page-linkine .acoes-tabela button { background: transparent; border: none; color: var(--cosmos-text-secondary); cursor: pointer; font-size: 1.1em; transition: all 0.3s ease; }
+        #page-linkine .acoes-tabela button:hover { color: var(--cosmos-negative); transform: scale(1.2); }
+    </style>
+</head>
+<body>
+    <div id="starry-sky-backdrop"></div>
+    <div id="loadingOverlay" class="loading-spinner-overlay"><div class="spinner"></div></div>
+    <div id="notification-container"></div>
+
+    <nav id="main-nav">
+        <a href="index.html">Patrimônio Estelar</a>
+        <a href="emprestimos.html">Empréstimos CosmoFin</a>
+        <a href="gastos.html">Gastos Cósmicos</a>
+        <a href="linkine.html" class="active">Linkine</a>
+    </nav>
+
+    <main id="page-linkine" class="page-view">
+        <div class="container">
+            <header>
+                <h1>Painel de Controle: Linkine</h1>
+            </header>
+
+            <div class="date-selector-control">
+                <label for="linkineDatePicker">Analisar Mês/Ano:</label>
+                <input type="month" id="linkineDatePicker">
+            </div>
+
+            <div id="linkine-content-area">
+            </div>
+        </div>
+
+        <template id="linkine-month-template">
+            <section class="secao acumulado">
+                <h2>Balanço Acumulado (Até este mês)</h2>
+                <div class="cards-container">
+                    <div class="card">
+                        <h3>Ganhos Totais</h3>
+                        <p class="positivo" id="linkine-ganhos-acumulado">R$ 0,00</p>
+                    </div>
+                    <div class="card">
+                        <h3>Gastos Totais</h3>
+                        <p class="negativo" id="linkine-gastos-acumulado">R$ 0,00</p>
+                    </div>
+                    <div class="card">
+                        <h3>Saldo Geral</h3>
+                        <p id="linkine-saldo-total">R$ 0,00</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="secao destaques">
+                <h2>Balanço do Mês</h2>
+                <div class="cards-container">
+                    <div class="card">
+                        <h3>Ganhos no Mês</h3>
+                        <p class="positivo" id="linkine-ganhos-mes">R$ 0,00</p>
+                    </div>
+                    <div class="card">
+                        <h3>Gastos no Mês</h3>
+                        <p class="negativo" id="linkine-gastos-mes">R$ 0,00</p>
+                    </div>
+                    <div class="card">
+                        <h3>Lucro Líquido do Mês</h3>
+                        <p id="linkine-lucro-mes">R$ 0,00</p>
+                    </div>
+                    <div class="card" id="cardMetaLinkine">
+                        <h3>Meta de Lucro Mensal</h3>
+                        <p>Meta: <span id="metaValorDisplayLinkine">R$ 0,00</span> <button id="definirMetaBtnLinkine" class="mini-btn" title="Definir Nova Meta">🎯</button></p>
+                        <div class="progress-bar-meta-bg">
+                            <div id="progressBarMetaFillLinkine" class="progress-bar-meta-fill" style="width: 0%;"></div>
+                        </div>
+                        <p class="subtext">Progresso: <span id="metaProgressoDisplayLinkine">0%</span></p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="secao">
+                <h2>Análise Gráfica do Mês</h2>
+                <div class="graficos-container">
+                    <div class="grafico-card">
+                        <h3>Distribuição de Gastos</h3>
+                        <div class="grafico-placeholder" id="gastos-chart-placeholder">Sem dados de gastos para exibir.</div>
+                        <div class="grafico-wrapper" id="gastos-chart-wrapper"> <canvas id="linkine-gastos-chart"></canvas> </div>
+                    </div>
+                    <div class="grafico-card">
+                        <h3>Ganhos vs Gastos</h3>
+                        <div class="grafico-placeholder" id="fluxo-chart-placeholder">Sem dados para exibir.</div>
+                        <div class="grafico-wrapper" id="fluxo-chart-wrapper"> <canvas id="linkine-fluxo-chart"></canvas> </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="secao">
+                <h2>Registro de Transações do Mês</h2>
+                <div class="form-transacao">
+                    <h3>Nova Transação</h3>
+                    <div class="form-grid">
+                        <div>
+                            <label for="linkine-data">Data</label>
+                            <input type="date" id="linkine-data">
+                        </div>
+                        <div>
+                            <label for="linkine-descricao">Descrição</label>
+                            <input type="text" id="linkine-descricao" placeholder="Ex: Ensaio Corporativo...">
+                        </div>
+                        <div>
+                            <label for="linkine-categoria">Categoria</label>
+                            <select id="linkine-categoria">
+                                <option value="Ensaio (Ganho)">Ensaio (Ganho)</option>
+                                <option value="Equipamento (Gasto)">Equipamento (Gasto)</option>
+                                <option value="Transporte (Gasto)">Transporte (Gasto)</option>
+                                <option value="Software/Edição (Gasto)">Software/Edição (Gasto)</option>
+                                <option value="Marketing (Gasto)">Marketing (Gasto)</option>
+                                <option value="Outro Ganho (Ganho)">Outro Ganho</option>
+                                <option value="Outro Gasto (Gasto)">Outro Gasto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="linkine-valor">Valor (R$)</label>
+                            <input type="number" id="linkine-valor" step="0.01" placeholder="150.00">
+                        </div>
+                        <div>
+                             <button id="linkine-add-btn" class="btn-registrar">Registrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <table style="margin-top: 2rem;">
+                    <thead> <tr> <th>Data</th> <th>Descrição</th> <th>Categoria</th> <th>Valor</th> <th>Ações</th> </tr> </thead>
+                    <tbody id="linkine-table-body"></tbody>
+                </table>
+            </section>
+
+            <section class="secao">
+                <h2>Evolução do Saldo Geral</h2>
+                <div id="linkineEvolucaoChartContainer">
+                    <canvas id="linkineEvolucaoChart"></canvas>
+                </div>
+            </section>
+        </template>
+    </main>
+
+    <script type="module">
+        const firebaseConfigLinkine = {
+            apiKey: "AIzaSyA3L_gNJvYry3RYAdk3zsEfCCbTnGdlsG0",
+            authDomain: "linkine-20cb8.firebaseapp.com",
+            databaseURL: "https://linkine-20cb8-default-rtdb.firebaseio.com",
+            projectId: "linkine-20cb8",
+            storageBucket: "linkine-20cb8.firebasestorage.app",
+            messagingSenderId: "836181966074",
+            appId: "1:836181966074:web:1a255ac4e20fae8624dd43",
+            measurementId: "G-RTSQLSGJJ7"
+        };
+      
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, remove, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const appLinkine = initializeApp(firebaseConfigLinkine, 'linkineApp');
+        const databaseLinkine = getDatabase(appLinkine);
+      
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const notificationContainer = document.getElementById('notification-container');
+        const datePicker = document.getElementById('linkineDatePicker');
+        const contentArea = document.getElementById('linkine-content-area');
+        const template = document.getElementById('linkine-month-template');
+        
+        let allTimeData = {};
+        let gastosChart = null, fluxoChart = null, evolucaoChart = null;
+        let animatedElements = new WeakSet();
+
+        function showLoading() { loadingOverlay.classList.add('visible'); }
+        function hideLoading() { loadingOverlay.classList.remove('visible'); }
+
+        function showNotification(message, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `notification-popup ${type}`;
+            const iconMap = { success: '✔️', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            popup.innerHTML = `<span class="icon">${iconMap[type] || 'ℹ️'}</span><span>${message}</span>`;
+            notificationContainer.prepend(popup);
+            setTimeout(() => popup.classList.add('show'), 10);
+            const timer = setTimeout(() => {
+                popup.classList.remove('show');
+                popup.addEventListener('transitionend', () => popup.remove(), { once: true });
+            }, 5000);
+            popup.addEventListener('click', () => { clearTimeout(timer); popup.classList.remove('show'); popup.addEventListener('transitionend', () => popup.remove(), { once: true }); });
+        }
+        
+        function formatCurrency(value) {
+            if(typeof value !== 'number') value = 0;
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        
+        function animateValue(element, start, end, duration) {
+            if (!element || animatedElements.has(element)) {
+                if(element) element.textContent = formatCurrency(end);
+                return;
+            }
+            animatedElements.add(element);
+
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const easedProgress = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                const currentValue = start + (end - start) * easedProgress;
+                element.textContent = formatCurrency(currentValue);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    element.textContent = formatCurrency(end);
+                    animatedElements.delete(element);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function setDefaultDateForTransactionInput(year, month) {
+            const dateInput = document.getElementById('linkine-data');
+            if (!dateInput) return;
+            const firstDayOfMonth = `${year}-${month}-01`;
+            const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+            const lastDayOfMonth = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+            dateInput.min = firstDayOfMonth;
+            dateInput.max = lastDayOfMonth;
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
+            if (parseInt(year) === currentYear && month === currentMonth) {
+                const currentDay = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${currentYear}-${currentMonth}-${currentDay}`;
+            } else {
+                dateInput.value = firstDayOfMonth;
+            }
+        }
+
+        function displayDataForMonth(selectedYear, selectedMonth) {
+            contentArea.innerHTML = '';
+            const clone = template.content.cloneNode(true);
+            contentArea.appendChild(clone);
+            
+            setDefaultDateForTransactionInput(selectedYear, selectedMonth);
+            document.getElementById('linkine-add-btn').addEventListener('click', addTransaction);
+            document.getElementById('definirMetaBtnLinkine').addEventListener('click', setMeta);
+
+            const monthKey = `${selectedYear}-${selectedMonth}`;
+            const monthTransactions = allTimeData[monthKey]?.transactions ? Object.values(allTimeData[monthKey].transactions) : [];
+            const ganhosMes = monthTransactions.filter(t => t.tipo === 'ganho').reduce((sum, t) => sum + t.valor, 0);
+            const gastosMes = monthTransactions.filter(t => t.tipo === 'gasto').reduce((sum, t) => sum + t.valor, 0);
+            const lucroMes = ganhosMes - gastosMes;
+
+            let ganhosAcumulado = 0, gastosAcumulado = 0;
+            const selectedDateNum = parseInt(selectedYear + selectedMonth);
+
+            Object.keys(allTimeData).sort().forEach(key => {
+                if (parseInt(key.replace('-', '')) <= selectedDateNum) {
+                    const trans = allTimeData[key].transactions || {};
+                    for (const id in trans) {
+                        if (trans[id].tipo === 'ganho') ganhosAcumulado += trans[id].valor;
+                        else if (trans[id].tipo === 'gasto') gastosAcumulado += trans[id].valor;
+                    }
+                }
+            });
+            const saldoTotal = ganhosAcumulado - gastosAcumulado;
+
+            animateValue(document.getElementById('linkine-ganhos-acumulado'), 0, ganhosAcumulado, 1200);
+            animateValue(document.getElementById('linkine-gastos-acumulado'), 0, gastosAcumulado, 1200);
+            animateValue(document.getElementById('linkine-saldo-total'), 0, saldoTotal, 1200);
+            animateValue(document.getElementById('linkine-ganhos-mes'), 0, ganhosMes, 1000);
+            animateValue(document.getElementById('linkine-gastos-mes'), 0, gastosMes, 1000);
+            animateValue(document.getElementById('linkine-lucro-mes'), 0, lucroMes, 1000);
+
+            const saldoTotalEl = document.getElementById('linkine-saldo-total');
+            saldoTotalEl.className = saldoTotal >= 0 ? 'positivo' : 'negativo';
+            const lucroMesEl = document.getElementById('linkine-lucro-mes');
+            lucroMesEl.className = lucroMes > 0 ? 'positivo' : (lucroMes < 0 ? 'negativo' : 'neutro');
+
+            renderTable(Object.keys(allTimeData[monthKey]?.transactions || {}).map(id => ({ id, ...allTimeData[monthKey].transactions[id] })));
+            updateCharts(monthTransactions);
+            updateMetaProgress(lucroMes);
+            renderEvolucaoChart();
+
+            const sections = document.querySelectorAll('#page-linkine .secao');
+            sections.forEach((section, index) => {
+                setTimeout(() => {
+                    section.classList.add('visible');
+                }, index * 150);
+            });
+        }
+
+        function renderTable(transactions) {
+            const tableBody = document.getElementById('linkine-table-body');
+            tableBody.innerHTML = '';
+            transactions.sort((a,b) => new Date(a.data) - new Date(b.data)).forEach(trans => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${new Date(trans.data + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                    <td>${trans.descricao}</td>
+                    <td>${trans.categoria.replace(/ \((Ganho|Gasto)\)/, '')}</td>
+                    <td class="${trans.tipo === 'ganho' ? 'positivo' : 'negativo'}">${formatCurrency(trans.valor)}</td>
+                    <td class="acoes-tabela"><button data-id="${trans.id}" title="Excluir">🗑️</button></td>
+                `;
+                row.querySelector('button').addEventListener('click', (e) => deleteTransaction(e.currentTarget.dataset.id));
+            });
+        }
+
+        function updateCharts(transactions) {
+            const gastosData = transactions.filter(t => t.tipo === 'gasto');
+            const gastosPorCategoria = gastosData.reduce((acc, t) => {
+                const cat = t.categoria.replace(' (Gasto)', '');
+                acc[cat] = (acc[cat] || 0) + t.valor;
+                return acc;
+            }, {});
+
+            const gastosChartWrapper = document.getElementById('gastos-chart-wrapper');
+            const gastosPlaceholder = document.getElementById('gastos-chart-placeholder');
+            if(gastosChart) gastosChart.destroy();
+            
+            if (gastosData.length > 0) {
+                gastosChartWrapper.style.display = 'block';
+                gastosPlaceholder.style.display = 'none';
+                gastosChart = new Chart(document.getElementById('linkine-gastos-chart'), {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(gastosPorCategoria), datasets: [{ data: Object.values(gastosPorCategoria), backgroundColor: ['#F87171', '#FBBF24', '#60A5FA', '#EC4899', '#A78BFA', '#34D399'], borderColor: 'var(--cosmos-card-bg)', borderWidth: 3 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--cosmos-text-secondary)', padding: 15 }}}}
+                });
+            } else {
+                gastosChartWrapper.style.display = 'none';
+                gastosPlaceholder.style.display = 'flex';
+            }
+
+            const fluxoChartWrapper = document.getElementById('fluxo-chart-wrapper');
+            const fluxoPlaceholder = document.getElementById('fluxo-chart-placeholder');
+            if(fluxoChart) fluxoChart.destroy();
+            const totalGanhosMes = transactions.filter(t => t.tipo === 'ganho').reduce((s,t) => s + t.valor, 0);
+            const totalGastosMes = gastosData.reduce((s,t) => s + t.valor, 0);
+             if (totalGanhosMes > 0 || totalGastosMes > 0) {
+                fluxoChartWrapper.style.display = 'block';
+                fluxoPlaceholder.style.display = 'none';
+                fluxoChart = new Chart(document.getElementById('linkine-fluxo-chart'), {
+                    type: 'bar',
+                    data: { labels: ['Movimentações do Mês'], datasets: [ { label: 'Ganhos', data: [totalGanhosMes], backgroundColor: 'rgba(52, 211, 153, 0.7)'}, { label: 'Gastos', data: [totalGastosMes], backgroundColor: 'rgba(248, 113, 113, 0.7)'} ]},
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: 'var(--cosmos-text-secondary)' } }, x: { ticks: { color: 'var(--cosmos-text-secondary)' } } }, plugins: { legend: { labels: { color: 'var(--cosmos-text-secondary)'}}}}
+                });
+            } else {
+                 fluxoChartWrapper.style.display = 'none';
+                 fluxoPlaceholder.style.display = 'flex';
+            }
+        }
+        
+        function renderEvolucaoChart() {
+            const ctx = document.getElementById('linkineEvolucaoChart')?.getContext('2d');
+            if (!ctx) return;
+
+            let allTransactions = [];
+            Object.keys(allTimeData).forEach(monthKey => {
+                const trans = allTimeData[monthKey].transactions || {};
+                Object.values(trans).forEach(t => allTransactions.push(t));
+            });
+            
+            if (allTransactions.length === 0) return;
+
+            allTransactions.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+            let saldo = 0;
+            const saldoPoints = allTransactions.map(t => {
+                saldo += (t.tipo === 'ganho' ? t.valor : -t.valor);
+                return { x: new Date(t.data + 'T00:00:00Z').getTime(), y: saldo };
+            });
+
+            if(evolucaoChart) evolucaoChart.destroy();
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(106, 242, 240, 0.3)');
+            gradient.addColorStop(1, 'rgba(106, 242, 240, 0)');
+
+            evolucaoChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Saldo Acumulado', data: saldoPoints, borderColor: 'var(--cosmos-cyan-accent)',
+                        backgroundColor: gradient, tension: 0.3, fill: true,
+                        pointRadius: 2, pointHoverRadius: 7, pointBackgroundColor: 'var(--cosmos-cyan-accent)',
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { type: 'time', time: { unit: 'month', tooltipFormat: 'dd/MM/yyyy' }, ticks: { color: 'var(--cosmos-text-secondary)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: 'var(--cosmos-text-secondary)', callback: value => formatCurrency(value) }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => `Saldo: ${formatCurrency(context.parsed.y)}` } } }
+                }
+            });
+        }
+        
+        async function setMeta() {
+            const [year, month] = datePicker.value.split('-');
+            const metaRef = ref(databaseLinkine, `linkine/${year}-${month}/meta`);
+            const currentMeta = (await get(metaRef)).val() || 1000;
+            const novaMetaStr = prompt("Defina a nova meta de lucro para este mês:", currentMeta);
+            if (novaMetaStr) {
+                const novaMeta = parseFloat(novaMetaStr.replace(',', '.'));
+                if (!isNaN(novaMeta) && novaMeta >= 0) {
+                    await set(metaRef, novaMeta);
+                    showNotification('Meta atualizada!', 'success');
+                    handleDateChange();
+                } else {
+                    showNotification('Valor inválido.', 'error');
+                }
+            }
+        }
+
+        async function updateMetaProgress(lucroMes) {
+            const [year, month] = datePicker.value.split('-');
+            if(!year || !month) return;
+            const meta = (await get(ref(databaseLinkine, `linkine/${year}-${month}/meta`))).val() || 0;
+            document.getElementById('metaValorDisplayLinkine').textContent = formatCurrency(meta);
+            if (meta > 0) {
+                const progresso = Math.max(0, Math.min(100, (lucroMes / meta) * 100));
+                document.getElementById('progressBarMetaFillLinkine').style.width = `${progresso.toFixed(2)}%`;
+                document.getElementById('metaProgressoDisplayLinkine').textContent = `${progresso.toFixed(2)}%`;
+            } else {
+                 document.getElementById('progressBarMetaFillLinkine').style.width = `0%`;
+                 document.getElementById('metaProgressoDisplayLinkine').textContent = `0%`;
+            }
+        }
+
+        function addTransaction() {
+            const dateInput = document.getElementById('linkine-data'), descInput = document.getElementById('linkine-descricao'),
+                  catInput = document.getElementById('linkine-categoria'), valorInput = document.getElementById('linkine-valor');
+            const [year, month] = datePicker.value.split('-');
+            const date = dateInput.value, desc = descInput.value.trim(), cat = catInput.value, valor = parseFloat(valorInput.value);
+
+            if (!date || !desc || !cat || isNaN(valor) || valor <= 0) {
+                return showNotification('Preencha todos os campos corretamente.', 'error');
+            }
+            const tipo = cat.includes('(Gasto)') ? 'gasto' : 'ganho';
+            
+            // CORREÇÃO DO BUG: O objeto enviado ao Firebase deve ter a chave "data"
+            push(ref(databaseLinkine, `linkine/${year}-${month}/transactions`), { 
+                data: date, // A chave deve ser 'data'
+                descricao: desc, 
+                categoria: cat, 
+                valor: valor, 
+                tipo: tipo 
+            })
+            .then(() => {
+                showNotification('Transação adicionada!', 'success');
+                descInput.value = ''; valorInput.value = ''; descInput.focus();
+            }).catch(err => {
+                showNotification('Erro ao adicionar.', 'error');
+                console.error(err);
+            });
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Tem certeza?')) {
+                const [year, month] = datePicker.value.split('-');
+                remove(ref(databaseLinkine, `linkine/${year}-${month}/transactions/${id}`))
+                .then(() => showNotification('Transação excluída.', 'info'))
+                .catch(err => showNotification('Erro ao excluir.', 'error'));
+            }
+        }
+        
+        function handleDateChange() {
+             if (datePicker.value) {
+                const [year, month] = datePicker.value.split('-');
+                displayDataForMonth(year, month);
+            }
+        }
+
+        datePicker.addEventListener('change', handleDateChange);
+
+        function initializePage() {
+            showLoading();
+            const today = new Date();
+            datePicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            onValue(ref(databaseLinkine, 'linkine'), (snapshot) => {
+                allTimeData = snapshot.val() || {};
+                handleDateChange();
+                hideLoading();
+            }, (error) => {
+                console.error("Firebase Read Error:", error);
+                showNotification("Erro ao carregar dados.", "error");
+                hideLoading();
+            });
+        }
+
+        initializePage();
+    </script>
+</body>
+</html>
