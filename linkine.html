@@ -12,7 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
-    <!-- LINK CORRIGIDO PARA O PORTUGUÊS -->
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/locale/pt-BR/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
@@ -221,28 +220,155 @@
         
         #linkineEvolucaoChartContainer { padding: 1.5rem; background-color: rgba(20,25,40,0.7); border-radius: 0.85rem; height: 400px; }
 
-        #page-linkine .form-transacao { margin-top: 1.5rem; padding: 2rem; background-color: rgba(20,25,40,0.8); border-radius: 0.75rem; }
-        #page-linkine .form-transacao .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; align-items: end; }
-        #page-linkine .form-transacao label { display: block; margin-bottom: 0.4rem; font-size: 0.9em; color: var(--cosmos-text-secondary); }
-        #page-linkine .form-transacao input, #page-linkine .form-transacao select {
+        .form-container { margin-top: 1.5rem; padding: 2rem; background-color: rgba(20,25,40,0.8); border-radius: 0.75rem; }
+        .form-container .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; align-items: end; }
+        .form-container label { display: block; margin-bottom: 0.4rem; font-size: 0.9em; color: var(--cosmos-text-secondary); }
+        .form-container input, .form-container select {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--cosmos-input-border);
             border-radius: 0.375rem; background-color: var(--cosmos-input-bg); color: var(--cosmos-text-primary);
             transition: all 0.3s ease;
         }
-        #page-linkine .form-transacao input:focus, #page-linkine .form-transacao select:focus {
+        .form-container input:focus, .form-container select:focus {
             outline: none; border-color: var(--cosmos-cyan-accent);
             box-shadow: 0 0 15px var(--cosmos-cyan-glow);
         }
-        #page-linkine .form-transacao button { border: none; padding: 0.8rem 1.8rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-family: var(--font-title); color: #fff; background-image: linear-gradient(135deg, var(--cosmos-purple-dark) 0%, var(--cosmos-blue-accent) 100%); transition: all 0.3s ease; }
-        #page-linkine .form-transacao button:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3); }
+        .btn-primary { border: none; padding: 0.8rem 1.8rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-family: var(--font-title); color: #fff; background-image: linear-gradient(135deg, var(--cosmos-purple-dark) 0%, var(--cosmos-blue-accent) 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3); }
+        
+        /* NOVO: Estilos para a área de distribuição de ganhos */
+        #linkine-member-distribution-container {
+            grid-column: 1 / -1; /* Ocupa a linha inteira */
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid var(--cosmos-input-border);
+        }
+        #linkine-member-distribution-container h4 {
+            font-family: var(--font-title);
+            color: var(--cosmos-purple-secondary);
+            margin-bottom: 1rem;
+            font-weight: 400;
+        }
+        .distribution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
         
         #page-linkine table { width: 100%; border-collapse: separate; border-spacing: 0; background-color: rgba(15, 18, 30, 0.85); border-radius: 0.75rem; overflow: hidden; }
         #page-linkine th { background-color: rgba(20, 25, 45, 0.9); color: var(--cosmos-cyan-accent); padding: 1rem 1.2rem; font-family: var(--font-title); border-bottom: 2px solid var(--cosmos-cyan-accent); text-align: left; }
         #page-linkine td { padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--cosmos-input-border); vertical-align: middle; transition: all 0.3s ease; }
-        #page-linkine tbody tr:hover { background-color: rgba(106, 242, 240, 0.07); color: var(--cosmos-cyan-accent); }
+        #page-linkine tbody tr:hover { background-color: rgba(106, 242, 240, 0.07); }
         #page-linkine tbody tr:hover td { color: var(--cosmos-cyan-accent); }
         #page-linkine .acoes-tabela button { background: transparent; border: none; color: var(--cosmos-text-secondary); cursor: pointer; font-size: 1.1em; transition: all 0.3s ease; }
         #page-linkine .acoes-tabela button:hover { color: var(--cosmos-negative); transform: scale(1.2); }
+
+        /* --- ESTILOS DA NOVA SEÇÃO DE EQUIPE E MODAL --- */
+        .equipe-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+        .equipe-card {
+            background: linear-gradient(145deg, rgba(35,40,60,0.92), rgba(25,30,45,0.97));
+            border: 1px solid var(--cosmos-border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .equipe-card.add-new {
+            background: transparent;
+            border: 2px dashed var(--cosmos-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            min-height: 230px;
+        }
+        .equipe-card.add-new:hover {
+            border-color: var(--cosmos-cyan-accent);
+            background-color: rgba(106, 242, 240, 0.05);
+            color: var(--cosmos-cyan-accent);
+        }
+        .equipe-card .add-icon { font-size: 3rem; line-height: 1; }
+        .equipe-card .add-text { margin-top: 0.5rem; font-family: var(--font-title); font-size: 1rem; }
+        
+        .equipe-card .avatar {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: default;
+            user-select: none;
+        }
+        .equipe-card:hover .avatar {
+            transform: scale(1.15) rotate(-5deg);
+        }
+
+        .equipe-card .nome { font-family: var(--font-title); font-size: 1.25rem; font-weight: 500; color: var(--cosmos-text-primary); margin-bottom: 0.75rem; }
+        .equipe-card .details { display: flex; justify-content: space-around; align-items: center; width: 100%; }
+        .equipe-card .details > div { text-align: center; }
+        .equipe-card .details .label { font-size: 0.8rem; color: var(--cosmos-text-secondary); margin-bottom: 0.25rem; }
+        .equipe-card .details .value { font-size: 1.2rem; font-weight: 600; }
+        .equipe-card .details .value.porcentagem { color: var(--cosmos-purple-secondary); }
+        .equipe-card .details .value.faturamento { color: var(--cosmos-positive); }
+
+        .equipe-card .card-actions {
+            position: absolute; top: 0; right: 0;
+            padding: 0.5rem;
+            display: flex; gap: 0.5rem;
+            background: linear-gradient(to left, rgba(13, 17, 23, 0.8), transparent);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .equipe-card:hover .card-actions {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .equipe-card .card-actions button {
+            background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+            width: 32px; height: 32px;
+            color: var(--cosmos-text-primary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .equipe-card .card-actions button:hover { background: rgba(255,255,255,0.2); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 17, 23, 0.7); backdrop-filter: blur(8px);
+            z-index: 1500;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .modal-content {
+            background-color: var(--cosmos-card-bg);
+            border: 1px solid var(--cosmos-border);
+            border-radius: 1rem; padding: 2rem;
+            width: 90%; max-width: 500px;
+            box-shadow: 0 10px 40px var(--cosmos-shadow-strong);
+            transform: scale(0.95); transition: transform 0.3s ease;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-content h3 { font-family: var(--font-title); margin-bottom: 1.5rem; text-align: center; }
+        .modal-content .form-group { margin-bottom: 1.2rem; }
+        .modal-content label { display: block; margin-bottom: 0.4rem; font-size: 0.9em; color: var(--cosmos-text-secondary); }
+        .modal-content input {
+             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--cosmos-input-border);
+            border-radius: 0.375rem; background-color: var(--cosmos-input-bg); color: var(--cosmos-text-primary);
+            transition: all 0.3s ease;
+        }
+        .modal-content input:focus {
+            outline: none; border-color: var(--cosmos-cyan-accent);
+            box-shadow: 0 0 15px var(--cosmos-cyan-glow);
+        }
+        .modal-content .form-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
+        .btn-secondary { background: var(--cosmos-input-bg); border: 1px solid var(--cosmos-border); padding: 0.7rem 1.5rem; color: var(--cosmos-text-secondary); border-radius: 0.375rem; cursor: pointer; transition: all 0.3s ease; }
+        .btn-secondary:hover { border-color: var(--cosmos-text-primary); color: var(--cosmos-text-primary); }
+
     </style>
 </head>
 <body>
@@ -269,12 +395,22 @@
             </div>
 
             <div id="linkine-content-area">
+                <!-- O CONTEÚDO SERÁ INJETADO AQUI PELO TEMPLATE -->
             </div>
         </div>
 
+        <!-- TEMPLATE PRINCIPAL -->
         <template id="linkine-month-template">
+            
+            <section class="secao">
+                <h2>Nossa Equipe</h2>
+                <div class="equipe-cards-container" id="equipe-cards-container">
+                    <!-- Cards dos membros e de adicionar serão gerados aqui -->
+                </div>
+            </section>
+
             <section class="secao acumulado">
-                <h2>Balanço Acumulado (Até este mês)</h2>
+                <h2>Balanço Geral (Empresa)</h2>
                 <div class="cards-container">
                     <div class="card">
                         <h3>Ganhos Totais</h3>
@@ -292,7 +428,7 @@
             </section>
 
             <section class="secao destaques">
-                <h2>Balanço do Mês</h2>
+                <h2>Balanço do Mês (Empresa)</h2>
                 <div class="cards-container">
                     <div class="card">
                         <h3>Ganhos no Mês</h3>
@@ -335,7 +471,7 @@
 
             <section class="secao">
                 <h2>Registro de Transações do Mês</h2>
-                <div class="form-transacao">
+                <div class="form-container">
                     <h3>Nova Transação</h3>
                     <div class="form-grid">
                         <div>
@@ -362,8 +498,17 @@
                             <label for="linkine-valor">Valor (R$)</label>
                             <input type="number" id="linkine-valor" step="0.01" placeholder="150.00">
                         </div>
-                        <div>
-                             <button id="linkine-add-btn" class="btn-registrar">Registrar</button>
+                        
+                        <!-- NOVO: Container para a distribuição dos membros -->
+                        <div id="linkine-member-distribution-container" style="display: none;">
+                            <h4>Distribuir Ganho Entre Membros</h4>
+                            <div class="distribution-grid" id="linkine-member-distribution-grid">
+                                <!-- Os campos dos membros serão injetados aqui -->
+                            </div>
+                        </div>
+
+                        <div style="align-self: end;">
+                             <button id="linkine-add-btn" class="btn-primary">Registrar</button>
                         </div>
                     </div>
                 </div>
@@ -375,13 +520,37 @@
             </section>
 
             <section class="secao">
-                <h2>Evolução do Saldo Geral</h2>
+                <h2>Evolução do Saldo Geral da Empresa</h2>
                 <div id="linkineEvolucaoChartContainer">
                     <canvas id="linkineEvolucaoChart"></canvas>
                 </div>
             </section>
         </template>
     </main>
+    
+    <!-- MODAL PARA ADICIONAR/EDITAR MEMBRO -->
+    <div id="membroModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle">Adicionar Novo Membro</h3>
+            <div class="form-group">
+                <label for="modal-membro-nome">Nome do Membro</label>
+                <input type="text" id="modal-membro-nome" placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group">
+                <label for="modal-membro-avatar">Avatar (cole um emoji)</label>
+                <input type="text" id="modal-membro-avatar" placeholder="👤" maxlength="2">
+            </div>
+            <div class="form-group">
+                <label for="modal-membro-porcentagem">Porcentagem Padrão de Ganhos (%)</label>
+                <input type="number" id="modal-membro-porcentagem" step="0.1" placeholder="50">
+            </div>
+            <div class="form-actions">
+                <button id="modalCancelBtn" class="btn-secondary">Cancelar</button>
+                <button id="modalSaveBtn" class="btn-primary">Salvar</button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module">
         const firebaseConfigLinkine = {
@@ -396,7 +565,7 @@
         };
       
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, remove, set, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, remove, set, get, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
         const appLinkine = initializeApp(firebaseConfigLinkine, 'linkineApp');
         const databaseLinkine = getDatabase(appLinkine);
@@ -407,9 +576,19 @@
         const contentArea = document.getElementById('linkine-content-area');
         const template = document.getElementById('linkine-month-template');
         
+        const membroModal = document.getElementById('membroModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalSaveBtn = document.getElementById('modalSaveBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const modalNomeInput = document.getElementById('modal-membro-nome');
+        const modalAvatarInput = document.getElementById('modal-membro-avatar');
+        const modalPorcentagemInput = document.getElementById('modal-membro-porcentagem');
+
         let allTimeData = {};
+        let equipeData = {};
         let gastosChart = null, fluxoChart = null, evolucaoChart = null;
         let animatedElements = new WeakSet();
+        let currentEditMemberId = null;
 
         function showLoading() { loadingOverlay.classList.add('visible'); }
         function hideLoading() { loadingOverlay.classList.remove('visible'); }
@@ -476,6 +655,36 @@
             }
         }
 
+        // NOVO: Função para renderizar o formulário de distribuição de ganhos
+        function renderMemberDistributionForm() {
+            const container = document.getElementById('linkine-member-distribution-container');
+            const grid = document.getElementById('linkine-member-distribution-grid');
+            const categoria = document.getElementById('linkine-categoria').value;
+            
+            if (categoria.includes('(Ganho)')) {
+                grid.innerHTML = '';
+                if (Object.keys(equipeData).length > 0) {
+                    for (const id in equipeData) {
+                        const membro = equipeData[id];
+                        const memberInputDiv = document.createElement('div');
+                        memberInputDiv.innerHTML = `
+                            <label for="dist-member-${id}">${membro.nome}</label>
+                            <input type="number" id="dist-member-${id}" data-member-id="${id}" value="${membro.porcentagem || 0}" step="0.1" min="0" max="100" placeholder="%">
+                        `;
+                        grid.appendChild(memberInputDiv);
+                    }
+                    container.style.display = 'block';
+                } else {
+                    grid.innerHTML = '<p style="color: var(--cosmos-text-secondary); grid-column: 1 / -1;">Nenhum membro na equipe para distribuir ganhos.</p>';
+                    container.style.display = 'block';
+                }
+            } else {
+                container.style.display = 'none';
+                grid.innerHTML = '';
+            }
+        }
+
+
         function displayDataForMonth(selectedYear, selectedMonth) {
             contentArea.innerHTML = '';
             const clone = template.content.cloneNode(true);
@@ -484,6 +693,10 @@
             setDefaultDateForTransactionInput(selectedYear, selectedMonth);
             document.getElementById('linkine-add-btn').addEventListener('click', addTransaction);
             document.getElementById('definirMetaBtnLinkine').addEventListener('click', setMeta);
+            // NOVO: Adiciona o listener para o seletor de categoria
+            const categoriaSelect = document.getElementById('linkine-categoria');
+            categoriaSelect.addEventListener('change', renderMemberDistributionForm);
+
 
             const monthKey = `${selectedYear}-${selectedMonth}`;
             const monthTransactions = allTimeData[monthKey]?.transactions ? Object.values(allTimeData[monthKey].transactions) : [];
@@ -516,20 +729,21 @@
             saldoTotalEl.className = saldoTotal >= 0 ? 'positivo' : 'negativo';
             const lucroMesEl = document.getElementById('linkine-lucro-mes');
             lucroMesEl.className = lucroMes > 0 ? 'positivo' : (lucroMes < 0 ? 'negativo' : 'neutro');
-
+            
+            // ATUALIZADO: Chamada inicial para renderizar o form de distribuição
+            renderMemberDistributionForm();
             renderTable(Object.keys(allTimeData[monthKey]?.transactions || {}).map(id => ({ id, ...allTimeData[monthKey].transactions[id] })));
+            renderEquipeCards(equipeData, monthTransactions);
             updateCharts(monthTransactions);
             updateMetaProgress(lucroMes);
             renderEvolucaoChart();
 
             const sections = document.querySelectorAll('#page-linkine .secao');
             sections.forEach((section, index) => {
-                setTimeout(() => {
-                    section.classList.add('visible');
-                }, index * 150);
+                setTimeout(() => section.classList.add('visible'), index * 100);
             });
         }
-
+        
         function renderTable(transactions) {
             const tableBody = document.getElementById('linkine-table-body');
             tableBody.innerHTML = '';
@@ -544,6 +758,114 @@
                 `;
                 row.querySelector('button').addEventListener('click', (e) => deleteTransaction(e.currentTarget.dataset.id));
             });
+        }
+
+        // --- FUNÇÕES PARA EQUIPE (CARDS E MODAL) ---
+
+        function openMemberModal(mode, memberId = null, memberData = {}) {
+            currentEditMemberId = memberId;
+            if (mode === 'add') {
+                modalTitle.textContent = 'Adicionar Novo Membro';
+                modalNomeInput.value = '';
+                modalAvatarInput.value = '';
+                modalPorcentagemInput.value = '';
+            } else {
+                modalTitle.textContent = 'Editar Membro';
+                modalNomeInput.value = memberData.nome;
+                modalAvatarInput.value = memberData.avatar || '';
+                modalPorcentagemInput.value = memberData.porcentagem;
+            }
+            membroModal.classList.add('visible');
+        }
+
+        function closeMemberModal() {
+            membroModal.classList.remove('visible');
+        }
+
+        function saveMember() {
+            const nome = modalNomeInput.value.trim();
+            const avatar = modalAvatarInput.value.trim();
+            const porcentagem = parseFloat(modalPorcentagemInput.value);
+
+            if (!nome || isNaN(porcentagem) || porcentagem < 0 || porcentagem > 100) {
+                return showNotification('Por favor, insira um nome e uma porcentagem padrão válida (0 a 100).', 'error');
+            }
+
+            const memberData = { nome, porcentagem, avatar };
+
+            if (currentEditMemberId) {
+                // Edit existing member
+                update(ref(databaseLinkine, `equipe/${currentEditMemberId}`), memberData)
+                    .then(() => {
+                        showNotification('Membro atualizado com sucesso!', 'success');
+                        closeMemberModal();
+                    })
+                    .catch(err => showNotification('Erro ao atualizar membro.', 'error'));
+            } else {
+                // Add new member
+                push(ref(databaseLinkine, 'equipe'), memberData)
+                    .then(() => {
+                        showNotification('Membro adicionado com sucesso!', 'success');
+                        closeMemberModal();
+                    })
+                    .catch(err => showNotification('Erro ao adicionar membro.', 'error'));
+            }
+        }
+
+        function deleteMember(id) {
+            if (confirm('Tem certeza que deseja remover este membro da equipe?')) {
+                remove(ref(databaseLinkine, `equipe/${id}`))
+                    .then(() => showNotification('Membro removido.', 'info'))
+                    .catch(err => showNotification('Erro ao remover membro.', 'error'));
+            }
+        }
+
+        function renderEquipeCards(equipe, monthTransactions) {
+            const container = document.getElementById('equipe-cards-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const addCard = document.createElement('div');
+            addCard.className = 'equipe-card add-new';
+            addCard.innerHTML = `<div class="add-icon">+</div><div class="add-text">Adicionar Membro</div>`;
+            addCard.addEventListener('click', () => openMemberModal('add'));
+            container.appendChild(addCard);
+
+            for (const id in equipe) {
+                const membro = equipe[id];
+                
+                // ATUALIZADO: Lógica de cálculo de ganhos do membro
+                const ganhosMesMembro = monthTransactions
+                    .filter(t => t.tipo === 'ganho' && t.distribuicao && t.distribuicao[id])
+                    .reduce((sum, t) => {
+                        const porcentagemNestaTransacao = t.distribuicao[id] || 0;
+                        return sum + (t.valor * (porcentagemNestaTransacao / 100));
+                    }, 0);
+                
+                const card = document.createElement('div');
+                card.className = 'equipe-card';
+                card.innerHTML = `
+                    <div class="avatar">${membro.avatar || '👤'}</div>
+                    <div class="nome">${membro.nome}</div>
+                    <div class="details">
+                        <div>
+                            <div class="label">Padrão</div>
+                            <div class="value porcentagem">${membro.porcentagem}%</div>
+                        </div>
+                        <div>
+                            <div class="label">Ganhos (Mês)</div>
+                            <div class="value faturamento">${formatCurrency(ganhosMesMembro)}</div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="edit-btn" title="Editar">✏️</button>
+                        <button class="delete-btn" title="Excluir">🗑️</button>
+                    </div>
+                `;
+                card.querySelector('.edit-btn').addEventListener('click', () => openMemberModal('edit', id, membro));
+                card.querySelector('.delete-btn').addEventListener('click', () => deleteMember(id));
+                container.appendChild(card);
+            }
         }
 
         function updateCharts(transactions) {
@@ -662,6 +984,11 @@
                 const progresso = Math.max(0, Math.min(100, (lucroMes / meta) * 100));
                 document.getElementById('progressBarMetaFillLinkine').style.width = `${progresso.toFixed(2)}%`;
                 document.getElementById('metaProgressoDisplayLinkine').textContent = `${progresso.toFixed(2)}%`;
+                
+                if (progresso >= 100) {
+                     confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                }
+
             } else {
                  document.getElementById('progressBarMetaFillLinkine').style.width = `0%`;
                  document.getElementById('metaProgressoDisplayLinkine').textContent = `0%`;
@@ -671,25 +998,50 @@
         function addTransaction() {
             const dateInput = document.getElementById('linkine-data'), descInput = document.getElementById('linkine-descricao'),
                   catInput = document.getElementById('linkine-categoria'), valorInput = document.getElementById('linkine-valor');
+
             const [year, month] = datePicker.value.split('-');
-            const date = dateInput.value, desc = descInput.value.trim(), cat = catInput.value, valor = parseFloat(valorInput.value);
+            const date = dateInput.value, desc = descInput.value.trim(), cat = catInput.value;
+            const valor = parseFloat(valorInput.value);
 
             if (!date || !desc || !cat || isNaN(valor) || valor <= 0) {
                 return showNotification('Preencha todos os campos corretamente.', 'error');
             }
+            
             const tipo = cat.includes('(Gasto)') ? 'gasto' : 'ganho';
             
-            // CORREÇÃO DO BUG: O objeto enviado ao Firebase deve ter a chave "data"
-            push(ref(databaseLinkine, `linkine/${year}-${month}/transactions`), { 
-                data: date, // A chave deve ser 'data'
-                descricao: desc, 
-                categoria: cat, 
-                valor: valor, 
-                tipo: tipo 
-            })
+            const transactionData = { 
+                data: date, descricao: desc, categoria: cat, valor: valor, tipo: tipo 
+            };
+
+            // ATUALIZADO: Adiciona a distribuição se for um ganho
+            if (tipo === 'ganho') {
+                const distributionInputs = document.querySelectorAll('#linkine-member-distribution-grid input');
+                const distribuicao = {};
+                let totalPercentage = 0;
+                
+                distributionInputs.forEach(input => {
+                    const memberId = input.dataset.memberId;
+                    const percentage = parseFloat(input.value) || 0;
+                    if (percentage > 0) {
+                        distribuicao[memberId] = percentage;
+                        totalPercentage += percentage;
+                    }
+                });
+
+                if (totalPercentage > 100.01) { // Pequena margem para erros de ponto flutuante
+                    return showNotification(`A soma das porcentagens (${totalPercentage}%) não pode exceder 100%.`, 'error');
+                }
+                
+                transactionData.distribuicao = distribuicao;
+            }
+            
+            push(ref(databaseLinkine, `linkine/${year}-${month}/transactions`), transactionData)
             .then(() => {
                 showNotification('Transação adicionada!', 'success');
-                descInput.value = ''; valorInput.value = ''; descInput.focus();
+                descInput.value = ''; 
+                valorInput.value = ''; 
+                renderMemberDistributionForm(); // Reseta os valores padrão
+                descInput.focus();
             }).catch(err => {
                 showNotification('Erro ao adicionar.', 'error');
                 console.error(err);
@@ -697,7 +1049,7 @@
         }
 
         function deleteTransaction(id) {
-            if (confirm('Tem certeza?')) {
+            if (confirm('Tem certeza que deseja excluir esta transação?')) {
                 const [year, month] = datePicker.value.split('-');
                 remove(ref(databaseLinkine, `linkine/${year}-${month}/transactions/${id}`))
                 .then(() => showNotification('Transação excluída.', 'info'))
@@ -712,23 +1064,38 @@
             }
         }
 
-        datePicker.addEventListener('change', handleDateChange);
-
         function initializePage() {
             showLoading();
             const today = new Date();
             datePicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            
             onValue(ref(databaseLinkine, 'linkine'), (snapshot) => {
                 allTimeData = snapshot.val() || {};
-                handleDateChange();
+                if (datePicker.value) handleDateChange();
                 hideLoading();
             }, (error) => {
-                console.error("Firebase Read Error:", error);
-                showNotification("Erro ao carregar dados.", "error");
+                console.error("Firebase Read Error (Transactions):", error);
+                showNotification("Erro ao carregar transações.", "error");
                 hideLoading();
+            });
+            
+            onValue(ref(databaseLinkine, 'equipe'), (snapshot) => {
+                equipeData = snapshot.val() || {};
+                if (datePicker.value) handleDateChange();
+            }, (error) => {
+                 console.error("Firebase Read Error (Equipe):", error);
+                showNotification("Erro ao carregar dados da equipe.", "error");
+            });
+
+            // Event listeners do Modal
+            modalSaveBtn.addEventListener('click', saveMember);
+            modalCancelBtn.addEventListener('click', closeMemberModal);
+            membroModal.addEventListener('click', (e) => {
+                if (e.target === membroModal) closeMemberModal();
             });
         }
 
+        datePicker.addEventListener('change', handleDateChange);
         initializePage();
     </script>
 </body>
