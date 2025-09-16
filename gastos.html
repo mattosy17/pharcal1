@@ -315,10 +315,10 @@
         #page-gastos .grafico-card {
             background-color: var(--cosmos-card-bg); backdrop-filter: blur(8px); border: 1px solid var(--cosmos-border);
             padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 6px 20px var(--cosmos-shadow-strong), inset 0 0 5px rgba(13,17,23,0.3);
-            flex: 1 1 400px; min-width: 300px; max-width: 550px; display: flex; flex-direction: column; align-items: center;
+            flex: 1 1 320px; min-width: 300px; max-width: 400px; display: flex; flex-direction: column; align-items: center;
         }
         #page-gastos .grafico-card h4 { font-family: var(--font-title); color: var(--cosmos-cyan-accent); font-size: 1.2em; margin-bottom: 1rem; text-align: center; }
-        #page-gastos .grafico-card canvas { max-width: 100%; max-height: 300px; }
+        #page-gastos .grafico-card canvas { max-width: 100%; max-height: 280px; }
         #page-gastos .grafico-placeholder { color: var(--cosmos-text-secondary); font-style: italic; text-align: center; padding: 2rem 0; }
         #page-gastos .table-wrapper { overflow-x: auto; }
         #page-gastos table {
@@ -569,6 +569,7 @@
             let dataSelecionadaAtualGastos = { ano: null, mes: null };
             let graficoGastosPorMotivoInstanceGastos = null;
             let graficoEntradaSaidaInstanceGastos = null;
+            let graficoUsoRendaInstanceGastos = null; // Instância para o novo gráfico
             const datePickerMesAnoEl = gastosView.querySelector('#gastosDatePickerMesAno');
             const mesDetalhesContainerEl = gastosView.querySelector('#gastosMesDetalhesContainer');
             const formTransacaoTemplate = gastosView.querySelector('#gastosFormTransacaoTemplate');
@@ -687,7 +688,7 @@
                 const anoDisplay = dadosDoMes?.ano || ano;
                 if (isMesNovo) { showGlobalNotification(`Iniciando registros para ${nomeDoMesDisplay} de ${anoDisplay}. Adicione sua primeira transação de gastos.`, "info"); }
                 const { totalEntradas, totalSaidas, saldoMes, transacoesComSaldo } = calcularTotaisMesGastos(transacoesDoMesArray);
-                const secaoHTML = `<section class="secao" data-ano="${ano}" data-mes="${mes}"> <h2>${nomeDoMesDisplay} <span style="color: var(--cosmos-purple-secondary); font-size: 0.8em;">${anoDisplay}</span></h2> <div class="cards-container"> <div class="card"><h3>Entradas Celestiais</h3><p class="positivo">${formatCurrencyGastos(totalEntradas)}</p></div> <div class="card"><h3>Drenos de Energia</h3><p class="negativo">${formatCurrencyGastos(totalSaidas)}</p></div> <div class="card"><h3>Balanço Orbital</h3><p class="${saldoMes < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(saldoMes)}</p></div> </div> <h2 class="sub-titulo-graficos">Análise Visual dos Drenos</h2> <div class="graficos-container"> <div class="grafico-card"><h4 >Gastos por Motivo Galáctico</h4><canvas id="gastosGraficoGastosMotivo"></canvas><div id="gastosGraficoGastosMotivoPlaceholder" class="grafico-placeholder hidden">Sem dados de gastos.</div></div> <div class="grafico-card"><h4>Entradas vs Saídas Cósmicas</h4><canvas id="gastosGraficoEntradaSaida"></canvas><div id="gastosGraficoEntradaSaidaPlaceholder" class="grafico-placeholder hidden">Sem dados suficientes.</div></div> </div> <button class="btn-adicionar-transacao-gastos" style=" border: none; padding: 0.7rem 1.5rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-size: 1em; font-family: var(--font-title); transition: all 0.25s ease-out; color: #fff; background-image: linear-gradient(135deg, var(--cosmos-button-primary-bg-start) 0%, var(--cosmos-button-primary-bg-end) 100%); text-shadow: 0 1px 2px rgba(0,0,0,0.25); margin-top: 2rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);"> Nova Transação de Gastos 🌠 </button> <div id="gastosFormContainer-${ano}-${mes}"></div> ${transacoesComSaldo.length === 0 ? `<div class="placeholder-mes" style="margin-top:1rem; padding: 2rem;"><span>🚀</span>Nenhum registro para ${nomeDoMesDisplay} de ${anoDisplay}.<br>Adicione sua primeira transação!</div>` : `<div class="table-wrapper"> <table> <thead><tr><th>DATA</th><th>MOTIVO</th><th>QUEM</th><th>VALOR</th><th>TIPO</th><th>SALDO APÓS</th><th>AÇÕES</th></tr></thead> <tbody id="gastosTabelaCorpo"> ${transacoesComSaldo.map(tr => ` <tr data-id="${tr.id}"> <td>${new Date(tr.data + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td> <td>${tr.motivo || '-'}</td><td>${tr.quem || '-'}</td> <td class="currency ${tr.tipo === 'entrada' ? 'positivo' : 'negativo'}">${formatCurrencyGastos(tr.valor)}</td> <td class="center-text ${tr.tipo === 'entrada' ? 'positivo' : 'negativo'}">${tr.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td> <td class="currency ${tr.saldoApos < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(tr.saldoApos)}</td> <td class="acoes-tabela"> <button class="btn-editar-gasto" title="Editar">✏️</button> <button class="btn-excluir-gasto" title="Excluir">🗑️</button> </td></tr>`).join('')} </tbody> <tfoot><tr><td colspan="5">TOTAIS DA MISSÃO (${nomeDoMesDisplay.toUpperCase().substring(0,3)}/${String(anoDisplay).substring(2)}):</td><td class="currency ${saldoMes < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(saldoMes)}</td><td></td></tr></tfoot> </table></div>` } </section>`;
+                const secaoHTML = `<section class="secao" data-ano="${ano}" data-mes="${mes}"> <h2>${nomeDoMesDisplay} <span style="color: var(--cosmos-purple-secondary); font-size: 0.8em;">${anoDisplay}</span></h2> <div class="cards-container"> <div class="card"><h3>Entradas Celestiais</h3><p class="positivo">${formatCurrencyGastos(totalEntradas)}</p></div> <div class="card"><h3>Drenos de Energia</h3><p class="negativo">${formatCurrencyGastos(totalSaidas)}</p></div> <div class="card"><h3>Balanço Orbital</h3><p class="${saldoMes < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(saldoMes)}</p></div> </div> <h2 class="sub-titulo-graficos">Análise Visual da Missão</h2> <div class="graficos-container"> <div class="grafico-card"><h4 >Gastos por Motivo Galáctico</h4><canvas id="gastosGraficoGastosMotivo"></canvas><div id="gastosGraficoGastosMotivoPlaceholder" class="grafico-placeholder hidden">Sem dados de gastos.</div></div> <div class="grafico-card"><h4>Entradas vs Saídas Cósmicas</h4><canvas id="gastosGraficoEntradaSaida"></canvas><div id="gastosGraficoEntradaSaidaPlaceholder" class="grafico-placeholder hidden">Sem dados suficientes.</div></div> <div class="grafico-card"><h4>Uso da Renda Mensal</h4><canvas id="gastosGraficoUsoRenda"></canvas><div id="gastosGraficoUsoRendaPlaceholder" class="grafico-placeholder hidden">Sem dados de entradas.</div></div> </div> <button class="btn-adicionar-transacao-gastos" style=" border: none; padding: 0.7rem 1.5rem; border-radius: 0.375rem; cursor: pointer; font-weight: 600; font-size: 1em; font-family: var(--font-title); transition: all 0.25s ease-out; color: #fff; background-image: linear-gradient(135deg, var(--cosmos-button-primary-bg-start) 0%, var(--cosmos-button-primary-bg-end) 100%); text-shadow: 0 1px 2px rgba(0,0,0,0.25); margin-top: 2rem; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);"> Nova Transação de Gastos 🌠 </button> <div id="gastosFormContainer-${ano}-${mes}"></div> ${transacoesComSaldo.length === 0 ? `<div class="placeholder-mes" style="margin-top:1rem; padding: 2rem;"><span>🚀</span>Nenhum registro para ${nomeDoMesDisplay} de ${anoDisplay}.<br>Adicione sua primeira transação!</div>` : `<div class="table-wrapper"> <table> <thead><tr><th>DATA</th><th>MOTIVO</th><th>QUEM</th><th>VALOR</th><th>TIPO</th><th>SALDO APÓS</th><th>AÇÕES</th></tr></thead> <tbody id="gastosTabelaCorpo"> ${transacoesComSaldo.map(tr => ` <tr data-id="${tr.id}"> <td>${new Date(tr.data + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td> <td>${tr.motivo || '-'}</td><td>${tr.quem || '-'}</td> <td class="currency ${tr.tipo === 'entrada' ? 'positivo' : 'negativo'}">${formatCurrencyGastos(tr.valor)}</td> <td class="center-text ${tr.tipo === 'entrada' ? 'positivo' : 'negativo'}">${tr.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td> <td class="currency ${tr.saldoApos < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(tr.saldoApos)}</td> <td class="acoes-tabela"> <button class="btn-editar-gasto" title="Editar">✏️</button> <button class="btn-excluir-gasto" title="Excluir">🗑️</button> </td></tr>`).join('')} </tbody> <tfoot><tr><td colspan="5">TOTAIS DA MISSÃO (${nomeDoMesDisplay.toUpperCase().substring(0,3)}/${String(anoDisplay).substring(2)}):</td><td class="currency ${saldoMes < 0 ? 'negativo' : 'positivo'}">${formatCurrencyGastos(saldoMes)}</td><td></td></tr></tfoot> </table></div>` } </section>`;
                 setTimeout(() => {
                     mesDetalhesContainerEl.innerHTML = secaoHTML;
                     const secaoCarregada = mesDetalhesContainerEl.querySelector('.secao');
@@ -700,6 +701,7 @@
                     }
                     renderizarGraficoGastosPorMotivoGastos(transacoesDoMesArray);
                     renderizarGraficoEntradaSaidaGastos(totalEntradas, totalSaidas);
+                    renderizarGraficoUsoRendaGastos(totalEntradas, totalSaidas); // Chamada para o novo gráfico
                     hideGlobalLoading();
                     if (!isMesNovo && transacoesDoMesArray.length > 0 ) { showGlobalNotification(`Dados de gastos de ${nomeDoMesDisplay} de ${anoDisplay} carregados!`, 'success', 2000); }
                 }, 100);
@@ -710,8 +712,8 @@
                 if (!canvasEl || !placeholderEl) return;
                 const { labels, data, colors } = prepararDadosGraficoGastosGastos(transacoesDoMesArray);
                 if (graficoGastosPorMotivoInstanceGastos) graficoGastosPorMotivoInstanceGastos.destroy();
-                if (labels.length === 0 || data.reduce((a, b) => a + b, 0) === 0) { canvasEl.classList.add('hidden'); placeholderEl.classList.remove('hidden'); placeholderEl.textContent = "Sem dados de gastos para exibir no gráfico."; return; }
-                canvasEl.classList.remove('hidden'); placeholderEl.classList.add('hidden');
+                if (labels.length === 0 || data.reduce((a, b) => a + b, 0) === 0) { canvasEl.style.display = 'none'; placeholderEl.classList.remove('hidden'); placeholderEl.textContent = "Sem dados de gastos para exibir no gráfico."; return; }
+                canvasEl.style.display = 'block'; placeholderEl.classList.add('hidden');
                 const ctx = canvasEl.getContext('2d');
                 graficoGastosPorMotivoInstanceGastos = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ label: 'Gastos por Motivo', data: data, backgroundColor: colors, borderColor: '#0D1117', borderWidth: 2, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--cosmos-text-secondary)', font: { family: 'var(--font-body)', size: 10 }, boxWidth: 15, padding: 15 } }, tooltip: { backgroundColor: 'rgba(13,17,23,0.9)', titleFont: { family: 'var(--font-title)'}, bodyFont: { family: 'var(--font-body)'}, titleColor: 'var(--cosmos-cyan-accent)', bodyColor: 'var(--cosmos-text-primary)', borderColor: 'var(--cosmos-cyan-accent)', borderWidth: 1, callbacks: { label: function(context) { let label = context.label || ''; if (label) label += ': '; if (context.parsed !== null) { label += formatCurrencyGastos(context.parsed); const total = context.dataset.data.reduce((sum, val) => sum + val, 0); const percentage = total > 0 ? (context.parsed / total * 100).toFixed(1) : 0; label += ` (${percentage}%)`; } return label; } } } }, animation: { animateRotate: true, animateScale: true }, layout: { padding: 5 } } });
             }
@@ -720,10 +722,76 @@
                 const placeholderEl = gastosView.querySelector('#gastosGraficoEntradaSaidaPlaceholder');
                 if (!canvasEl || !placeholderEl) return;
                 if(graficoEntradaSaidaInstanceGastos) graficoEntradaSaidaInstanceGastos.destroy();
-                if (totalEntradas === 0 && totalSaidas === 0) { canvasEl.classList.add('hidden'); placeholderEl.classList.remove('hidden'); placeholderEl.textContent = "Sem dados de entradas ou saídas para exibir."; return; }
-                canvasEl.classList.remove('hidden'); placeholderEl.classList.add('hidden');
+                if (totalEntradas === 0 && totalSaidas === 0) { canvasEl.style.display = 'none'; placeholderEl.classList.remove('hidden'); placeholderEl.textContent = "Sem dados de entradas ou saídas para exibir."; return; }
+                canvasEl.style.display = 'block'; placeholderEl.classList.add('hidden');
                 const ctx = canvasEl.getContext('2d');
                 graficoEntradaSaidaInstanceGastos = new Chart(ctx, { type: 'pie', data: { labels: ['Entradas Celestiais', 'Drenos de Energia'], datasets: [{ data: [totalEntradas, totalSaidas], backgroundColor: ['rgba(52, 211, 153, 0.7)', 'rgba(248, 113, 113, 0.7)'], borderColor: ['var(--cosmos-positive)','var(--cosmos-negative)'], borderWidth: 2, hoverOffset: 8, hoverBorderColor: 'var(--cosmos-text-primary)'}] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'var(--cosmos-text-secondary)', font: { family: 'var(--font-body)', size: 11 }, boxWidth: 18, padding: 15 } }, tooltip: { backgroundColor: 'rgba(13,17,23,0.9)', titleFont: { family: 'var(--font-title)'}, bodyFont: { family: 'var(--font-body)'}, titleColor: 'var(--cosmos-cyan-accent)', bodyColor: 'var(--cosmos-text-primary)', borderColor: 'var(--cosmos-cyan-accent)', borderWidth: 1, callbacks: { label: function(context) { return `${context.label}: ${formatCurrencyGastos(context.raw)}`; } } } }, animation: { animateRotate: true, animateScale: false } } });
+            }
+            // --- NOVO GRÁFICO ---
+            function renderizarGraficoUsoRendaGastos(totalEntradas, totalSaidas) {
+                const canvasEl = gastosView.querySelector('#gastosGraficoUsoRenda');
+                const placeholderEl = gastosView.querySelector('#gastosGraficoUsoRendaPlaceholder');
+                if (!canvasEl || !placeholderEl) return;
+                if(graficoUsoRendaInstanceGastos) graficoUsoRendaInstanceGastos.destroy();
+
+                // Só exibe o gráfico se houver entradas, pois a porcentagem é baseada nelas
+                if (totalEntradas <= 0) {
+                    canvasEl.style.display = 'none';
+                    placeholderEl.classList.remove('hidden');
+                    placeholderEl.textContent = "Adicione uma entrada para ver o uso da renda.";
+                    return;
+                }
+                
+                canvasEl.style.display = 'block';
+                placeholderEl.classList.add('hidden');
+
+                const saldoRestante = Math.max(0, totalEntradas - totalSaidas);
+                const valorGasto = totalSaidas;
+
+                const ctx = canvasEl.getContext('2d');
+                graficoUsoRendaInstanceGastos = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Gasto', 'Saldo Restante'],
+                        datasets: [{
+                            data: [valorGasto, saldoRestante],
+                            backgroundColor: ['rgba(236, 72, 153, 0.7)', 'rgba(96, 165, 250, 0.7)'],
+                            borderColor: ['var(--cosmos-pink-accent)', 'var(--cosmos-blue-accent)'],
+                            borderWidth: 2,
+                            hoverOffset: 8,
+                            hoverBorderColor: 'var(--cosmos-text-primary)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: 'var(--cosmos-text-secondary)', font: { family: 'var(--font-body)', size: 11 }, boxWidth: 18, padding: 15 }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(13,17,23,0.9)', titleFont: { family: 'var(--font-title)'},
+                                bodyFont: { family: 'var(--font-body)'}, titleColor: 'var(--cosmos-purple-secondary)',
+                                bodyColor: 'var(--cosmos-text-primary)', borderColor: 'var(--cosmos-purple-secondary)',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) label += ': ';
+                                        const valor = context.raw;
+                                        const total = context.chart.getDatasetMeta(0).total;
+                                        const percentage = total > 0 ? ((valor / total) * 100).toFixed(1) : 0;
+                                        label += `${formatCurrencyGastos(valor)} (${percentage}%)`;
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        animation: { animateRotate: true, animateScale: true },
+                        cutout: '60%' // Transforma em um gráfico de rosca (doughnut)
+                    }
+                });
             }
             function mostrarFormularioAdicaoGastos(ano, mes) {
                 cancelarAdicaoEdicaoTransacaoGastos(); 
